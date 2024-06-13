@@ -47,7 +47,6 @@ export async function inizialize() {
 
             obras_extraidas.push(InfoObras);
         }
-        break;
     }
     logger.info(`Finalizando script :${convertJson(obras_extraidas)}`)
 }

@@ -56,7 +56,6 @@ function inizialize() {
                 const InfoObras = yield runObras(obras);
                 obras_extraidas.push(InfoObras);
             }
-            break;
         }
         __1.logger.info(`Finalizando script :${(0, conversiones_1.convertJson)(obras_extraidas)}`);
     });
