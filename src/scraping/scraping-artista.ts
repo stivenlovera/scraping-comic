@@ -211,8 +211,6 @@ export async function scrapingPaginaImage(resultados: Obra, pathOriginal: string
 
         await page.close()
         await browserPagina.close();
-
-        break;
     }
     resultados.paginas = paginas
     return resultados;
