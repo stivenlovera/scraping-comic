@@ -47,8 +47,15 @@ export async function inizialize() {
                 const InfoObras = await runObras(obras);
                 obras_extraidas.push(InfoObras);
             }
-            index++
+
+            if (index == 6) {
+                break;
+            }
+            index++;
         }
+
+        
+        break;
     }
     logger.info(`Finalizando script :${convertJson(obras_extraidas)}`)
 }
@@ -60,7 +67,7 @@ async function runObras(obras: Obra[]) {
 
     for (const obra of obras) {
 
-        if (count>1) { //delete
+        if (count > 1) { //delete
             const dato = await scrapingObra(obra.url_scraping, obra);
 
             const pathOriginal = `${process.env.PATH_COMIC}/${dato.codigo}/original`;
