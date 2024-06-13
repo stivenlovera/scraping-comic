@@ -46,7 +46,6 @@ export async function inizialize() {
             const InfoObras = await runObras(obras);
 
             obras_extraidas.push(InfoObras);
-            break;
         }
         break;
     }

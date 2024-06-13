@@ -55,7 +55,6 @@ function inizialize() {
                 __1.logger.info(`obras extraidas :${(0, conversiones_1.convertJson)(obras)}`);
                 const InfoObras = yield runObras(obras);
                 obras_extraidas.push(InfoObras);
-                break;
             }
             break;
         }
