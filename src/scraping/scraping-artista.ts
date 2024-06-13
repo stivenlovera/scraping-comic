@@ -194,20 +194,31 @@ export async function scrapingPaginaImage(resultados: Obra, pathOriginal: string
         const formato = stringToFormat(imgURL!)
         logger.info(`GUARDAR DATOS ${pathOriginal}/${pagina.numero}.${formato}`);
 
-        await fs.promises.writeFile(`${pathOriginal}/${pagina.numero}.${formato}`, imageBuffer)
+        await fs.promises.writeFile(`${pathOriginal}/${pagina.numero}.${formato}`, imageBuffer);
 
-        const pathStorageBig = await OptimizarBig(`${pathOriginal}/${pagina.numero}.${formato}`, `${pagina.numero}`, pathBig)
-        const pathStorageMedio = await OptimizarMedio(`${pathOriginal}/${pagina.numero}.${formato}`, `${pagina.numero}`, pathMedio)
-        const pathStorageSmall = await OptimizarSmall(`${pathOriginal}/${pagina.numero}.${formato}`, `${pagina.numero}`, pathSmall)
+        try {
 
-        paginas.push({
-            ...pagina,
-            url_big: pathStorageBig.replace(process.env.PATH_COMIC!, ''),
-            url_medio: pathStorageMedio.replace(process.env.PATH_COMIC!, ''),
-            url_small: pathStorageSmall.replace(process.env.PATH_COMIC!, ''),
-            url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${pagina.numero}.${formato}`,
-            data_scraping: imgURL!
-        })
+            const pathStorageBig = await OptimizarBig(`${pathOriginal}/${pagina.numero}.${formato}`, `${pagina.numero}`, pathBig)
+            const pathStorageMedio = await OptimizarMedio(`${pathOriginal}/${pagina.numero}.${formato}`, `${pagina.numero}`, pathMedio)
+            const pathStorageSmall = await OptimizarSmall(`${pathOriginal}/${pagina.numero}.${formato}`, `${pagina.numero}`, pathSmall)
+            paginas.push({
+                ...pagina,
+                url_big: pathStorageBig.replace(process.env.PATH_COMIC!, ''),
+                url_medio: pathStorageMedio.replace(process.env.PATH_COMIC!, ''),
+                url_small: pathStorageSmall.replace(process.env.PATH_COMIC!, ''),
+                url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${pagina.numero}.${formato}`,
+                data_scraping: imgURL!
+            })
+        } catch (error) {
+            paginas.push({
+                ...pagina,
+                url_big: 'error encontrado',
+                url_medio: 'error encontrado',
+                url_small: 'error encontrado',
+                url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${pagina.numero}.${formato}`,
+                data_scraping: imgURL!
+            })
+        }
 
         await page.close()
         await browserPagina.close();

@@ -40,12 +40,14 @@ export async function inizialize() {
     for (const page of pageArtistas) {
         let index: number = 0;
         for (const artista of page.artistas) {
-            logger.info(`autor :${convertJson(artista)}`)
-            const obras = await run(artista.href)
-            logger.info(`obras extraidas :${convertJson(obras)}`)
-            const InfoObras = await runObras(obras);
-
-            obras_extraidas.push(InfoObras);
+            if (index > 1) {
+                logger.info(`autor :${convertJson(artista)}`)
+                const obras = await run(artista.href)
+                logger.info(`obras extraidas :${convertJson(obras)}`)
+                const InfoObras = await runObras(obras);
+                obras_extraidas.push(InfoObras);
+            }
+            index++
         }
     }
     logger.info(`Finalizando script :${convertJson(obras_extraidas)}`)
@@ -53,22 +55,30 @@ export async function inizialize() {
 
 async function runObras(obras: Obra[]) {
     let resultados: Obra[] = []
+
+    let count = 0;
+
     for (const obra of obras) {
-        const dato = await scrapingObra(obra.url_scraping, obra);
 
-        const pathOriginal = `${process.env.PATH_COMIC}/${dato.codigo}/original`;
-        const pathSmall = `${process.env.PATH_COMIC}/${dato.codigo}/small`;
-        const pathMedio = `${process.env.PATH_COMIC}/${dato.codigo}/medio`;
-        const pathBig = `${process.env.PATH_COMIC}/${dato.codigo}/big`;
-        await createFolder(dato.codigo, pathOriginal, pathSmall, pathMedio, pathBig)
-        const completadoPaginas = await scrapingPaginaImage(dato, pathOriginal, pathSmall, pathMedio, pathBig);
+        if (count>1) { //delete
+            const dato = await scrapingObra(obra.url_scraping, obra);
 
-        resultados.push(completadoPaginas);
-        //data base
-        logger.info(`insertando obra :${convertJson(resultados)}`)
-        const insertObra = await AppDataSource.getRepository(Obra).insert(completadoPaginas);
-        logger.info(`resultado de insercion :${convertJson(insertObra)}`)
+            const pathOriginal = `${process.env.PATH_COMIC}/${dato.codigo}/original`;
+            const pathSmall = `${process.env.PATH_COMIC}/${dato.codigo}/small`;
+            const pathMedio = `${process.env.PATH_COMIC}/${dato.codigo}/medio`;
+            const pathBig = `${process.env.PATH_COMIC}/${dato.codigo}/big`;
+            await createFolder(dato.codigo, pathOriginal, pathSmall, pathMedio, pathBig)
+            const completadoPaginas = await scrapingPaginaImage(dato, pathOriginal, pathSmall, pathMedio, pathBig);
+
+            resultados.push(completadoPaginas);
+            //data base
+            logger.info(`insertando obra :${convertJson(resultados)}`)
+            const insertObra = await AppDataSource.getRepository(Obra).insert(completadoPaginas);
+            logger.info(`resultado de insercion :${convertJson(insertObra)}`)
+        }
+
+        count++;
     }
-    
+
     return resultados;
 }
