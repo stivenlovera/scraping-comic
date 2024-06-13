@@ -1,6 +1,6 @@
 #custom
 comics/*
-
+build/
 # Logs
 logs
 *.log
