@@ -1,4 +1,4 @@
-import puppeteer, { Page } from 'puppeteer';
+import { Page } from 'puppeteer';
 import { Obra } from '../entities/obra.entity';
 import 'dotenv/config';
 import { logger } from '..';
@@ -7,6 +7,8 @@ import { Pagina } from '../entities/pagina.entity';
 import * as fs from 'fs'
 import { convertJson, stringToFormat } from '../utils/conversiones';
 import sharp from 'sharp';
+import puppeteer from 'puppeteer-extra'
+import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker'
 
 export async function scrapingArtista(url: string): Promise<Obra[]> {
     const baseUrl = process.env.URL_SCRAPING;
@@ -98,6 +100,8 @@ export async function scrapingPerPagina(url: string): Promise<Obra[]> {
 
 
 export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
+
+    puppeteer.use(AdblockerPlugin({ blockTrackers: true }))
     const baseUrl = process.env.URL_SCRAPING;
     // Launch the browser and open a new blank page
     const browser = await puppeteer.launch({
