@@ -285,17 +285,17 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
     const url = resultados.paginas[0].url_scraping
     const browserPagina = await puppeteer.launch({
         headless: false,
-        slowMo: 100
+        slowMo: 200
     });
 
     logger.info(`Scrapeando informacion imagen ${url}`);
     const page = await browserPagina.newPage();
     await page.goto(url);
+
     for (let index = 0; index < 10000; index++) {
 
         logger.info(`pagina ${index}`);
         await page.waitForSelector('img[src][class="lillie"]')
-
         const imgURL = await page!.evaluate(() => {
             const picture = document.querySelectorAll('#comicImages>picture')[0]
             const srcset = picture.children.item(0)?.getAttribute('srcset')
@@ -309,7 +309,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
         logger.info(`url de descarga ${imgURL}`);
 
         const pageNew = await browserPagina.newPage()
-        const response = await pageNew.goto(imgURL!, { timeout: 0 })
+        const response = await pageNew.goto(imgURL!, { timeout: 0, waitUntil: 'networkidle0' })
         const imageBuffer = await response!.buffer();
         const formato = stringToFormat(imgURL!)
 
