@@ -239,7 +239,7 @@ export async function scrapingPaginaImage(resultados: Obra, pathOriginal: string
             }
         })
         const pageNew = await browserPagina.newPage()
-        const response = await pageNew.goto(imgURL!, { timeout: 0 })
+        const response = await pageNew.goto(imgURL!, { timeout: 0, waitUntil: 'networkidle0' })
         const imageBuffer = await response!.buffer();
 
         logger.info(`IMAGEN ${imgURL}`);
@@ -291,7 +291,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
     logger.info(`Scrapeando informacion imagen ${url}`);
     const page = await browserPagina.newPage();
     await page.goto(url);
-    for (let index = 1; index < 10000; index++) {
+    for (let index = 0; index < 10000; index++) {
 
         logger.info(`pagina ${index}`);
         await page.waitForSelector('img[src][class="lillie"]')
@@ -312,17 +312,21 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
         const response = await pageNew.goto(imgURL!, { timeout: 0 })
         const imageBuffer = await response!.buffer();
         const formato = stringToFormat(imgURL!)
-        await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
 
-        paginas.push({
-            url_scraping: imgURL!,
-            numero: index,
-            url_big: '',
-            url_medio: '',
-            url_small: '',
-            url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${index}.${formato}`,
-            data_scraping: imgURL!
-        })
+        if (index > 0) {
+            await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
+            logger.info(`imagen descargada ${pathOriginal}/${index}.${formato}`);
+
+            paginas.push({
+                url_scraping: imgURL!,
+                numero: index,
+                url_big: '',
+                url_medio: '',
+                url_small: '',
+                url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${index}.${formato}`,
+                data_scraping: imgURL!
+            })
+        }
 
         pageNew.close();
 
@@ -333,7 +337,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
                 return false;
             }
         });
-       
+
         if (validate) {
             logger.info(`siguiente pagina ${validate}`);
             await page.click('#nextPanel')
@@ -344,7 +348,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
         }
     }
 
-    resultados.paginas=paginas;
+    resultados.paginas = paginas;
     await page.close()
     await browserPagina.close();
 
