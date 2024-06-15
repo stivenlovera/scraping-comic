@@ -20,13 +20,11 @@ export async function inizialize() {
     for (const page of pageArtistas) {
         let index: number = 0;
         for (const artista of page.artistas) {
-            if (index > 6) {
-                logger.info(`autor numero ${index} artista :${convertJson(artista)}`)
-                const obras = await run(artista.href)
-                logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
-                const InfoObras = await runObras(obras);
-                obras_extraidas.push(InfoObras);
-            }
+            logger.info(`autor numero ${index} artista :${convertJson(artista)}`)
+            const obras = await run(artista.href)
+            logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
+            const InfoObras = await runObras(obras);
+            obras_extraidas.push(InfoObras);
             index++;
         }
         break;
@@ -38,7 +36,6 @@ async function runObras(obras: Obra[]) {
     let resultados: Obra[] = []
 
     for (let index = 0; index < obras.length; index++) {
-        if (index > 1) {
             const dato = await scrapingObra(obras[index].url_scraping, obras[index]);
             logger.info(`preparando obra numero ${index} obra: ${dato.nombre} codigo: ${dato.codigo}`)
             const pathOriginal = `${process.env.PATH_COMIC}/${dato.codigo}/original`;
@@ -53,7 +50,6 @@ async function runObras(obras: Obra[]) {
             logger.info(`insertando obra :${convertJson(resultados)}`)
             const insertObra = await AppDataSource.getRepository(Obra).insert(completadoPaginas);
             logger.info(`resultado de insercion :${convertJson(insertObra)}`)
-        }
     }
 
     return resultados;

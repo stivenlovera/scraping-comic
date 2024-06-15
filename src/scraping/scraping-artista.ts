@@ -317,20 +317,18 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
         const imageBuffer = await response!.buffer();
         const formato = stringToFormat(imgURL!)
 
-        if (index > 0) {
-            await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
-            logger.info(`imagen descargada ${pathOriginal}/${index}.${formato}`);
+        await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
+        logger.info(`imagen descargada ${pathOriginal}/${index}.${formato}`);
 
-            paginas.push({
-                url_scraping: imgURL!,
-                numero: index,
-                url_big: '',
-                url_medio: '',
-                url_small: '',
-                url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${index}.${formato}`,
-                data_scraping: imgURL!
-            })
-        }
+        paginas.push({
+            url_scraping: imgURL!,
+            numero: index,
+            url_big: '',
+            url_medio: '',
+            url_small: '',
+            url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${index}.${formato}`,
+            data_scraping: imgURL!
+        })
 
         pageNew.close();
 
