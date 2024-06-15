@@ -1,11 +1,11 @@
-import puppeteer from 'puppeteer';
+import puppeteer, { Page } from 'puppeteer';
 import { Obra } from '../entities/obra.entity';
 import 'dotenv/config';
 import { logger } from '..';
 import moment from 'moment';
 import { Pagina } from '../entities/pagina.entity';
 import * as fs from 'fs'
-import { stringToFormat } from '../utils/conversiones';
+import { convertJson, stringToFormat } from '../utils/conversiones';
 import sharp from 'sharp';
 
 export async function scrapingArtista(url: string): Promise<Obra[]> {
@@ -16,10 +16,53 @@ export async function scrapingArtista(url: string): Promise<Obra[]> {
     });
     const page = await browser.newPage();
 
-    logger.info(`Scrapeando ${url}`);
+    logger.info(`Scrapeando para paginacion ${url}`);
     await page.goto(url);
 
-    const resultados = await page.evaluate(({ baseUrl }) => {
+    let paginacion: string[] = []
+    paginacion.push(url);
+
+    const pagEncontradas = await page.evaluate(({ baseUrl }) => {
+        let paginasEncontradas: string[] = [];
+        const paginas = document.querySelectorAll('div.page-container.page-top>ul');
+        [...paginas].map((p, i) => {
+            const pag = document.querySelectorAll('li');
+            [...paginas].map((li, i) => {
+                const url = li.querySelector('a')?.getAttribute('href')!;
+                if (url != undefined) {
+                    paginasEncontradas.push(baseUrl + li.querySelector('a')?.getAttribute('href')!);
+                }
+            })
+        });
+        return paginasEncontradas;
+    }, { baseUrl });
+
+    paginacion = paginacion.concat(pagEncontradas)
+
+    await browser.close();
+    //paginas actual añadida
+    let obras: Obra[] = []
+    logger.info(`paginas ${convertJson(paginacion)}`);
+    for (const pagina of paginacion) {
+        const nuevaPag = await scrapingPerPagina(pagina)
+        obras = obras.concat(nuevaPag);
+    }
+    //await page.screenshot({ path: 'capturas/hitomi.png' })
+    return obras;
+}
+
+export async function scrapingPerPagina(url: string): Promise<Obra[]> {
+    const baseUrl = process.env.URL_SCRAPING;
+    const pagBrowser = await puppeteer.launch({
+        headless: false,
+        slowMo: 400
+    });
+    const pag = await pagBrowser.newPage();
+
+    logger.info(`Scrapeando en obras en pagina ${url}`);
+    await pag.goto(url);
+    await pag.waitForSelector('a.lillie')
+    const resultados = await pag.evaluate(({ baseUrl }) => {
         const contenido = document.querySelectorAll('a.lillie');
         const data = [...contenido].map((ele) => {
             let datos: Obra = {
@@ -48,11 +91,10 @@ export async function scrapingArtista(url: string): Promise<Obra[]> {
         })
         return data;
     }, { baseUrl })
-
-    //await page.screenshot({ path: 'capturas/hitomi.png' })
-    await browser.close();
+    logger.info(`obras encontradas ${resultados.length}`);
+    await pagBrowser.close();
     return resultados;
-}
+};
 
 
 export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
@@ -185,9 +227,19 @@ export async function scrapingPaginaImage(resultados: Obra, pathOriginal: string
         const page = (await browserPagina.pages())[0]
         const get = await page.goto(pagina.url_scraping)
         const image = await page.waitForSelector('img[src][class="lillie"]')
-        const imgURL = await image!.evaluate(img => img.getAttribute('src'))
+        const imgURL = await image!.evaluate(img => {
+            img.getAttribute('src')
+            const picture = document.querySelectorAll('#comicImages>picture')[0]
+            const srcset = picture.children.item(0)?.getAttribute('srcset')
+            const src = picture.children.item(0)?.getAttribute('src')
+            if (srcset == null) {
+                return src
+            } else {
+                return srcset
+            }
+        })
         const pageNew = await browserPagina.newPage()
-        const response = await pageNew.goto(imgURL!, { timeout: 0, waitUntil: 'networkidle0' })
+        const response = await pageNew.goto(imgURL!, { timeout: 0 })
         const imageBuffer = await response!.buffer();
 
         logger.info(`IMAGEN ${imgURL}`);
@@ -227,14 +279,86 @@ export async function scrapingPaginaImage(resultados: Obra, pathOriginal: string
     return resultados;
 }
 
+export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: string) {
+    let paginas: Pagina[] = [];
+
+    const url = resultados.paginas[0].url_scraping
+    const browserPagina = await puppeteer.launch({
+        headless: false,
+        slowMo: 100
+    });
+
+    logger.info(`Scrapeando informacion imagen ${url}`);
+    const page = await browserPagina.newPage();
+    await page.goto(url);
+    for (let index = 1; index < 10000; index++) {
+
+        logger.info(`pagina ${index}`);
+        await page.waitForSelector('img[src][class="lillie"]')
+
+        const imgURL = await page!.evaluate(() => {
+            const picture = document.querySelectorAll('#comicImages>picture')[0]
+            const srcset = picture.children.item(0)?.getAttribute('srcset')
+            const src = picture.children.item(0)?.getAttribute('src')
+            if (srcset == null) {
+                return src
+            } else {
+                return srcset
+            }
+        })
+        logger.info(`url de descarga ${imgURL}`);
+
+        const pageNew = await browserPagina.newPage()
+        const response = await pageNew.goto(imgURL!, { timeout: 0 })
+        const imageBuffer = await response!.buffer();
+        const formato = stringToFormat(imgURL!)
+        await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
+
+        paginas.push({
+            url_scraping: imgURL!,
+            numero: index,
+            url_big: '',
+            url_medio: '',
+            url_small: '',
+            url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${index}.${formato}`,
+            data_scraping: imgURL!
+        })
+
+        pageNew.close();
+
+        const validate = await page!.evaluate(() => {
+            if (document.querySelector('#nextPanel>i.icon-chevron-left.icon-white')?.isConnected) {
+                return true;
+            } else {
+                return false;
+            }
+        });
+       
+        if (validate) {
+            logger.info(`siguiente pagina ${validate}`);
+            await page.click('#nextPanel')
+        } else {
+            logger.info(`ultima pagina ${resultados.numero_pagina}`);
+            resultados.numero_pagina = index;
+            break;
+        }
+    }
+
+    resultados.paginas=paginas;
+    await page.close()
+    await browserPagina.close();
+
+    return resultados;
+}
+
 export async function createFolder(codigo: string, pathOriginal: string, pathSmall: string, pathMedio: string, pathBig: string) {
     const path = `./comics`;
     if (!fs.existsSync(`${path}/${codigo}`)) {
         fs.mkdirSync(`${path}/${codigo}`);
         fs.mkdirSync(pathOriginal);
-        fs.mkdirSync(pathSmall);
+        /* fs.mkdirSync(pathSmall);
         fs.mkdirSync(pathMedio);
-        fs.mkdirSync(pathBig);
+        fs.mkdirSync(pathBig); */
     }
 }
 
