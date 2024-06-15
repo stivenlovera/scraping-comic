@@ -296,7 +296,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
     const page = await browserPagina.newPage();
     await page.goto(url);
 
-    for (let index = 0; index < 10000; index++) {
+    for (let index = 1; index < 10000; index++) {
 
         logger.info(`pagina ${index}`);
         await page.waitForSelector('img[src][class="lillie"]')
