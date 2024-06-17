@@ -26,6 +26,7 @@ export async function inizialize() {
                 logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
                 const InfoObras = await runObras(obras);
                 obras_extraidas.push(InfoObras);
+                break;
             }
             index++;
         }

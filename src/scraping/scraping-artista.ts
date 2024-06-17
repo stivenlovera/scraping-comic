@@ -115,18 +115,18 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
 
     const obra = await page.evaluate(({ dato, baseUrl }) => {
         dato.nombre = document.getElementById('gallery-brand')!.querySelector('a')!.innerText;
-
+        console.log('nombre')
         dato.grupo = {
             nombre: document.getElementById('groups')!.innerText
         };
-
+        console.log('grupo')
         const tipo = document.querySelectorAll('#type');
         const dataTipo = [...tipo].map((ele) => {
             dato.tipo = {
                 nombre: ele.querySelector('a')!.innerText
             }
         })
-
+        console.log('tipo')
         const artistas = document.querySelectorAll('#artists>ul.comma-list');
         const dataArtista = [...artistas].map((ele) => {
             const li = ele.querySelectorAll('li');
@@ -140,34 +140,40 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
             })
             return dataLi
         });
-
+        console.log('artistas')
         const lenguaje = document.querySelectorAll('#language');
         [...lenguaje].map((ele) => {
-            dato.lenguaje = {
-                nombre: ele.querySelector('a')!.innerText/*  */
-            };
+            if (ele.querySelector('a')?.innerText != null || ele.querySelector('a')?.innerText != undefined) {
+                dato.lenguaje = {
+                    nombre: ele.querySelector('a')!.innerText
+                };
+            }
         })
-
+        console.log('lenguaje')
         const personajes = document.querySelectorAll('#characters');
         [...personajes].map((ele) => {
             const li = ele.querySelectorAll('li');
             [...li].map((li) => {
-                dato.personajes.push({
-                    nombre: li.querySelector('a')!.innerText
-                });
+                if (li.querySelector('a')?.innerText != undefined || li.querySelector('a')?.innerText != null) {
+                    dato.personajes.push({
+                        nombre: li.querySelector('a')!.innerText
+                    });
+                }
             })
         })
-
+        console.log('personajes')
         const etiquetas = document.querySelectorAll('#tags');
         [...etiquetas].map((ele) => {
             const li = ele.querySelectorAll('li');
             [...li].map((li) => {
-                dato.etiquetas.push({
-                    nombre: (li.querySelector('a')!.innerText).replace(/[^a-zA-Z0-9 ]/g, '').trim()
-                });
+                if ((li.querySelector('a')?.innerText) != null || (li.querySelector('a')?.innerText) != undefined) {
+                    dato.etiquetas.push({
+                        nombre: (li.querySelector('a')!.innerText).replace(/[^a-zA-Z0-9 ]/g, '').trim()
+                    });
+                }
             })
         })
-
+        console.log('etiquetas')
         const series = document.querySelectorAll('#series ul.comma-list');
         [...series].map((ele) => {
             const li = ele.querySelectorAll('li');
@@ -177,13 +183,12 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
                 });
             })
         })
-
+        console.log('series')
         const fecha = document.querySelectorAll('span.date');
         [...fecha].map((ele) => {
-
             dato.fecha_scraping = ele.innerHTML;
         })
-
+        console.log('fecha')
         const paginas = document.querySelectorAll('.thumbnail-list');
         [...paginas].map((ele) => {
             const li = ele.querySelectorAll('li');
@@ -202,6 +207,7 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
             dato.numero_pagina = [...li].length
             console.log('cantidad paginas', [...li].length)
         })
+        console.log('paginas final')
         return dato;
     }, { dato, baseUrl });
 
