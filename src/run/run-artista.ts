@@ -20,36 +20,40 @@ export async function inizialize() {
     for (const page of pageArtistas) {
         let index: number = 0;
         for (const artista of page.artistas) {
-            logger.info(`autor numero ${index} artista :${convertJson(artista)}`)
-            const obras = await run(artista.href)
-            logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
-            const InfoObras = await runObras(obras);
-            obras_extraidas.push(InfoObras);
+            if (index > 12) {
+                logger.info(`autor numero ${index} artista :${convertJson(artista)}`)
+                const obras = await run(artista.href)
+                logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
+                const InfoObras = await runObras(obras);
+                obras_extraidas.push(InfoObras);
+            }
             index++;
         }
         break;
     }
-    logger.info(`Finalizando script :${convertJson(obras_extraidas)}`)
+    logger.info(`Finalizando script`)
 }
 
 async function runObras(obras: Obra[]) {
     let resultados: Obra[] = []
 
     for (let index = 0; index < obras.length; index++) {
+        if (index > 2) {
             const dato = await scrapingObra(obras[index].url_scraping, obras[index]);
-            logger.info(`preparando obra numero ${index} obra: ${dato.nombre} codigo: ${dato.codigo}`)
+            logger.info(`preparando obra numero ${index} de autores ${convertJson(dato.artistas)} obra: ${dato.nombre} codigo: ${dato.codigo}`)
             const pathOriginal = `${process.env.PATH_COMIC}/${dato.codigo}/original`;
             const pathSmall = `${process.env.PATH_COMIC}/${dato.codigo}/small`;
             const pathMedio = `${process.env.PATH_COMIC}/${dato.codigo}/medio`;
             const pathBig = `${process.env.PATH_COMIC}/${dato.codigo}/big`;
             await createFolder(dato.codigo, pathOriginal, pathSmall, pathMedio, pathBig)
             const completadoPaginas = await scrapingPerPaginaImage(dato, pathOriginal);
-
+    
             resultados.push(completadoPaginas);
             //data base
-            logger.info(`insertando obra :${convertJson(resultados)}`)
+            logger.info(`insertando obra `)
             const insertObra = await AppDataSource.getRepository(Obra).insert(completadoPaginas);
-            logger.info(`resultado de insercion :${convertJson(insertObra)}`)
+            logger.info(`resultado de insercion correcto:${convertJson(insertObra.identifiers)}`)
+        }
     }
 
     return resultados;

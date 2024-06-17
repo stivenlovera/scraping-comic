@@ -1,4 +1,4 @@
-import { Page } from 'puppeteer';
+
 import { Obra } from '../entities/obra.entity';
 import 'dotenv/config';
 import { logger } from '..';
@@ -101,7 +101,6 @@ export async function scrapingPerPagina(url: string): Promise<Obra[]> {
 
 export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
 
-    puppeteer.use(AdblockerPlugin({ blockTrackers: true }))
     const baseUrl = process.env.URL_SCRAPING;
     // Launch the browser and open a new blank page
     const browser = await puppeteer.launch({
@@ -284,12 +283,13 @@ export async function scrapingPaginaImage(resultados: Obra, pathOriginal: string
 }
 
 export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: string) {
+    puppeteer.use(AdblockerPlugin({ blockTrackers: true }))
     let paginas: Pagina[] = [];
 
     const url = resultados.paginas[0].url_scraping
     const browserPagina = await puppeteer.launch({
         headless: false,
-        slowMo: 200
+        slowMo: 100
     });
 
     logger.info(`Scrapeando informacion imagen ${url}`);
@@ -313,7 +313,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
         logger.info(`url de descarga ${imgURL}`);
 
         const pageNew = await browserPagina.newPage()
-        const response = await pageNew.goto(imgURL!, { timeout: 0, waitUntil: 'networkidle0' })
+        const response = await pageNew.goto(imgURL!, { timeout: 50000, waitUntil: 'networkidle0' })
         const imageBuffer = await response!.buffer();
         const formato = stringToFormat(imgURL!)
 
