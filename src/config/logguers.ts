@@ -37,7 +37,7 @@ export function InitializeLoggers() {
     var logger = winston.createLogger({
         format: combine(
             label({ label: 'right meow!' }),
-            timestamp(),
+            winston.format.timestamp({format: 'YYYY-MM-DD HH:mm:ss'}),
             myFormat,
         ),
         transports: [

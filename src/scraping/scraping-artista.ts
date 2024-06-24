@@ -9,6 +9,8 @@ import { convertJson, stringToFormat } from '../utils/conversiones';
 import sharp from 'sharp';
 import puppeteer from 'puppeteer-extra'
 import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker'
+import { Browser } from 'puppeteer';
+import player from 'play-sound'
 
 export async function scrapingArtista(url: string): Promise<Obra[]> {
     const baseUrl = process.env.URL_SCRAPING;
@@ -28,8 +30,8 @@ export async function scrapingArtista(url: string): Promise<Obra[]> {
         let paginasEncontradas: string[] = [];
         const paginas = document.querySelectorAll('div.page-container.page-top>ul');
         [...paginas].map((p, i) => {
-            const pag = document.querySelectorAll('li');
-            [...paginas].map((li, i) => {
+            const pag = p.querySelectorAll('li');
+            [...pag].map((li, i) => {
                 const url = li.querySelector('a')?.getAttribute('href')!;
                 if (url != undefined) {
                     paginasEncontradas.push(baseUrl + li.querySelector('a')?.getAttribute('href')!);
@@ -317,11 +319,13 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
             }
         })
         logger.info(`url de descarga ${imgURL}`);
-
-        const pageNew = await browserPagina.newPage()
-        const response = await pageNew.goto(imgURL!, { timeout: 50000, waitUntil: 'networkidle0' })
-        const imageBuffer = await response!.buffer();
         const formato = stringToFormat(imgURL!)
+        await proceso_descarga(browserPagina, imgURL, pathOriginal, index, paginas, formato);
+
+        /* const pageNew = await browserPagina.newPage()
+        const response = await pageNew.goto(imgURL!, { timeout: 5000000, waitUntil: 'networkidle0' })
+        const imageBuffer = await response!.buffer();
+        
 
         await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
         logger.info(`imagen descargada ${pathOriginal}/${index}.${formato}`);
@@ -336,7 +340,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
             data_scraping: imgURL!
         })
 
-        pageNew.close();
+        pageNew.close(); */
 
         const validate = await page!.evaluate(() => {
             if (document.querySelector('#nextPanel>i.icon-chevron-left.icon-white')?.isConnected) {
@@ -398,4 +402,48 @@ export async function OptimizarSmall(pathImagen: string, nameFile: string, pathS
         .avif()
         .toFile(`${pathSmall}/${nameFile}.avif`)
     return `${pathSmall}/${nameFile}.avif`
+}
+
+
+async function proceso_descarga(browserPagina: Browser, imgURL: string | null | undefined, pathOriginal: string, index: number, paginas: Pagina[], formato: string) {
+
+    let detectError: boolean = false;
+    let intentos: number = 0;
+    while (!detectError) {
+        intentos++;
+        try {
+            logger.info(`preparando descarga desde ${imgURL}`);
+
+            const pageNew = await browserPagina.newPage()
+            const response = await pageNew.goto(imgURL!, { timeout: 5000000, waitUntil: 'networkidle0' })
+            const imageBuffer = await response!.buffer();
+        
+            await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
+            logger.info(`imagen descargada ${pathOriginal}/${index}.${formato}`);
+        
+            paginas.push({
+                url_scraping: imgURL!,
+                numero: index,
+                url_big: '',
+                url_medio: '',
+                url_small: '',
+                url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${index}.${formato}`,
+                data_scraping: imgURL!
+            })
+        
+            pageNew.close();
+
+            break;
+        } catch (error) {
+            logger.info(`error generado ${error}`);
+            logger.info(`intentos ${intentos}`);
+            player().play('sonido/alerta.mp3', { timeout: 5000 }, (error) => {
+                console.log(error)
+            })
+            detectError = false;
+
+        }
+    }
+
+    return paginas;
 }
