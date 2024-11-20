@@ -1,5 +1,5 @@
 import winston, { createLogger, format, transports } from "winston";
-import * as fs from 'fs';
+import moment from 'moment'
 import 'winston-daily-rotate-file';
 
 const { combine, timestamp, label, printf } = format;
@@ -7,8 +7,8 @@ const { combine, timestamp, label, printf } = format;
 export function InitializeLoggers() {
     var transport = new winston.transports.DailyRotateFile({
         dirname: 'logs/' + getDirName(),
-        filename: 'log-%DATE%',
-        datePattern: 'YYYY-MM-DD', // rotates every day
+        filename: '%DATE%.log',
+        datePattern: 'DD', // rotates every day
     });
 
 
@@ -24,10 +24,8 @@ export function InitializeLoggers() {
      }); */
 
     function getDirName() { // returns current YYYY-MM
-        var curDate = new Date();
-        var curMonth = ("0" + (curDate.getMonth() + 1)).slice(-2);
-        var curYYYYMM = curDate.getFullYear() + "-" + curMonth;
-        return curYYYYMM;
+        var currentTime = `${moment().format('YYYY')}/${moment().format('MMMM')}/${moment().format('DD')}.log`;
+        return currentTime;
     }
 
     const myFormat = printf(({ level, message, label, timestamp }) => {
@@ -37,7 +35,7 @@ export function InitializeLoggers() {
     var logger = winston.createLogger({
         format: combine(
             label({ label: 'right meow!' }),
-            winston.format.timestamp({format: 'YYYY-MM-DD HH:mm:ss'}),
+            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
             myFormat,
         ),
         transports: [
