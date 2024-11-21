@@ -11,20 +11,8 @@ export function InitializeLoggers() {
         datePattern: 'DD', // rotates every day
     });
 
-
-    /*  transport.on('rotate', function () {
-         if (!fs.existsSync('logs/' + getDirName() + '/')) {
-             transport = new winston.transports.DailyRotateFile({
-                 dirname: 'logs/' + getDirName(),
-                 filename: 'log-%DATE%' + '.log',
-                 datePattern: 'YYYY-MM-DD',
- 
-             });
-         }
-     }); */
-
     function getDirName() { // returns current YYYY-MM
-        var currentTime = `${moment().format('YYYY')}/${moment().format('MMMM')}/${moment().format('DD')}.log`;
+        var currentTime = `${moment().format('YYYY')}/${moment().format('MMMM')}`;
         return currentTime;
     }
 
