@@ -1,7 +1,10 @@
 import { logger } from "..";
-import { AppDataSource } from "../config/database";
+import { AppDataSource, AppDataSourceMysql } from "../config/database";
+import { Dato } from "../entities/data.entity";
+import { Libro } from "../entities/libro.entity";
 import { Obra } from "../entities/obra.entity";
 import { PageArtista } from "../entities/pageArtista.entity";
+import { Seguimiento } from "../entities/seguimiento.entity";
 import { createFolder, scrapingArtista, scrapingObra, scrapingPaginaImage, scrapingPerPaginaImage } from "../scraping/scraping-artista";
 import { convertJson } from "../utils/conversiones";
 import 'dotenv/config';
@@ -12,29 +15,54 @@ async function run(url: string) {
 }
 
 export async function inizialize() {
-    await AppDataSource.initialize();
-    const pageArtistas = await AppDataSource.getRepository(PageArtista).find({ where: { nombre: 'a' } });
-    logger.info(`artistas almacenado en base de datos :${convertJson(pageArtistas)}`)
+    logger.info(`AppDataSourceMysql`)
+    //await AppDataSource.initialize();
+    await AppDataSourceMysql.initialize();
+
+    const letras = await AppDataSourceMysql.getRepository(PageArtista).find();
+    logger.info(`artistas almacenado en base de datos :${convertJson(letras)}`)
 
     let obras_extraidas = [];
 
-    for (const page of pageArtistas) {
+    for (const letra of letras) {
+        const pageArtistas = await AppDataSourceMysql.getRepository(PageArtista).find({ where: { nombre: letra.nombre } });
 
-        let index: number = 0;
-        for (const artista of page.artistas) {
-            //if (index > 57) {
-            logger.info(`autor numero ${index} artista :${convertJson(artista)}`)
-            const obras = await run(artista.href)
-            logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
-            const InfoObras = await runObras(obras);
-            obras_extraidas.push(InfoObras);
-            //break;
-            //}
-            index++;
+        logger.info(`autores :${convertJson(pageArtistas)}`)
+        
+        for (const page of pageArtistas) {
+
+            const datos = await AppDataSourceMysql.getRepository(Dato).find({ where: { pagina_id: page.pagina_id } });
+
+            logger.info(`autores :${convertJson(datos)}`)
+
+            let index: number = 0;
+            for (const artista of datos) {
+                //buscar el ultimo
+
+                logger.info(`autor numero ${index} artista :${convertJson(page.nombre)}`)
+                const obras = await run(artista.href)
+
+                logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
+
+                const libro_estraido = obras.map<Libro>((obra) => {
+                    return {
+                        href: obra.url_scraping,
+                        completed: 0,
+                        dato_id: artista.dato_id
+                    }
+                })
+                logger.info(`libros :${convertJson(libro_estraido)}`)
+                const libro = await AppDataSourceMysql.getRepository(Libro).insert(libro_estraido);
+                //const InfoObras = await runObras(obras);
+                //obras_extraidas.push(InfoObras);
+                index++;
+            }
+
+            break;
         }
-        break;
+        logger.info(`Finalizando script`)
     }
-    logger.info(`Finalizando script`)
+
 }
 
 async function runObras(obras: Obra[]) {
@@ -42,10 +70,10 @@ async function runObras(obras: Obra[]) {
 
     for (let index = 0; index < obras.length; index++) {
         //if (index > 10) {
-        
+
         const verificar = await AppDataSource.getRepository(Obra).findOne({ where: { url_scraping: obras[index].url_scraping.toString() } });
 
-        logger.info(`comparando: ${convertJson(obras[index].url_scraping) } `)
+        logger.info(`comparando: ${convertJson(obras[index].url_scraping)} `)
         if (verificar === null) {
             logger.info(`OBRA NUEVO`, obras[index].url_scraping);
             const dato = await scrapingObra(obras[index].url_scraping, obras[index]);
@@ -66,7 +94,7 @@ async function runObras(obras: Obra[]) {
         } else {
             logger.info(`OBRA YA EXISTE`, obras[index].url_scraping);
         }
-        
+
     }
 
     return resultados;

@@ -1,10 +1,10 @@
-import { Entity, Column, ObjectId, PrimaryGeneratedColumn, BaseEntity, CreateDateColumn, ObjectIdColumn } from "typeorm";
-import { Artista } from "./artista.entity";
+import { Entity, Column, ObjectId, PrimaryGeneratedColumn, BaseEntity, CreateDateColumn, ObjectIdColumn, OneToMany } from "typeorm";
+import { Dato } from "./data.entity";
 
-@Entity()
+@Entity({ name: 'pagina' })
 export class PageArtista {
-    @ObjectIdColumn()
-    id?: ObjectId;
+    @PrimaryGeneratedColumn('increment')
+    pagina_id?: number;
 
     @Column()
     nombre: string;
@@ -15,6 +15,9 @@ export class PageArtista {
     @CreateDateColumn()
     fechaCreacion?: Date;
 
-    @Column((type) => Artista)
-    artistas: Artista[]
+    @Column()
+    cantidad?: number;
+
+    @OneToMany(() => Dato, (dato) => dato.dato)
+    datos: Dato[]
 }

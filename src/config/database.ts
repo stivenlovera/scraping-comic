@@ -11,6 +11,9 @@ import { Pagina } from "../entities/pagina.entity";
 import { Personaje } from "../entities/personaje.entity";
 import { Tipo } from "../entities/tipo.entity";
 import 'dotenv/config'
+import { Seguimiento } from "../entities/seguimiento.entity";
+import { Dato } from "../entities/data.entity";
+import { Libro } from "../entities/libro.entity";
 
 export const AppDataSource = new DataSource({
     type: "mongodb",
@@ -29,17 +32,22 @@ export const AppDataSource = new DataSource({
         Pagina,
         Personaje,
         Tipo,
-        Serie
+        Serie,
+        Seguimiento
     ],
 });
 
-/* type: 'mongodb',
-host: process.env.DATABASE_HOST,
-port: parseInt(process.env.DATABASE_PORT!),
-username: process.env.DATABASE_USERNAME,
-password: process.env.DATABASE_PASS,
-database: process.env.DATABASE,
-synchronize: false,
-logging: false,
-entities: [Artista, PageArtista, ArtistaObra, Etiqueta, EtiquetaObra, Grupo, Lenguaje, Obra, Pagina, Personaje, PersonajeObra, Tipo], */
-
+export const AppDataSourceMysql = new DataSource({
+    type: "mysql",
+    host: process.env.DATABASE_MYSQL_HOST,
+    port: parseInt(process.env.DATABASE_MYSQL_PORT!),
+    database: process.env.DATABASE_MYSQL,
+    synchronize: false,
+    username:process.env.DATABASE_MYSQL_USERNAME,
+    //logging: false,
+    entities: [
+        Dato,
+        PageArtista,
+        Libro
+    ],
+});
