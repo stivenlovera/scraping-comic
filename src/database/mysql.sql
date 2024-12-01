@@ -1,7 +1,5 @@
 DROP DATABASE IF EXISTS scraping_web;
-
-
-CREATE DATABASE scraping_web;
+CREATE DATABASE scraping_web CHARACTER SET utf8 COLLATE utf8_general_ci;
 
 DROP TABLE IF EXISTS webscraping;
 CREATE TABLE webscraping
