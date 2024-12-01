@@ -50,4 +50,5 @@ export const AppDataSourceMysql = new DataSource({
         PageArtista,
         Libro
     ],
+    charset:'utf8mb4_unicode_ci'
 });
