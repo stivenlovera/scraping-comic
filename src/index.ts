@@ -8,7 +8,7 @@ export const logger = InitializeLoggers();
 
 logger.info(`Inicializando Scraping...`)
 try {
-    inizializeLibros();
+    inizialize();
     //console.log(moment("7 feb 2017, 8:06 p.m.",'D MMM YYYY, hh:mm a').format('YYYY-MM-DD hh:mm:ss a'));
 } catch (error) {
     logger.warn(`Error generado`)

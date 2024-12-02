@@ -49,8 +49,10 @@ SELECT * FROM libro;
 
 SELECT * FROM dato INNER JOIN pagina ON dato.pagina_id=pagina.pagina_id WHERE dato.pagina_id=2;
 
-SELECT * FROM libro INNER JOIN dato ON dato.dato_id=libro.dato_id WHERE dato.dato_id=56;
+SELECT libro_id FROM libro INNER JOIN dato ON dato.dato_id=libro.dato_id WHERE dato.pagina_id=2;
 
-INSERT INTO (completed,
+DELETE FROM libro WHERE libro.libro_id in ()
+
+ INSERT INTO libro(completed,
 href,
-dato_id)
+dato_id) VALUES('1','https://hitomi.la/imageset/ナエナエ�🐰--58316460--2024.11.30日本語語-3141736.html','1');

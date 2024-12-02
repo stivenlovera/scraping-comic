@@ -39,7 +39,7 @@ export async function inizialize() {
             let index: number = 0;
             for (const artista of datos) {
                 //buscar el ultimO
-                if (index > 182) {
+                //if (index > 182) {
                     try {
                         logger.info(`autor numero ${index} page :${convertJson(page.nombre)} artista :${convertJson(artista.nombre)} }`)
                         const obras = await run(artista.href)
@@ -61,7 +61,7 @@ export async function inizialize() {
                             console.log(error)
                         })
                     }
-                }
+                //}
                 //const InfoObras = await runObras(obras);
                 //obras_extraidas.push(InfoObras);
                 index++;
