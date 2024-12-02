@@ -51,7 +51,9 @@ SELECT * FROM dato INNER JOIN pagina ON dato.pagina_id=pagina.pagina_id WHERE da
 
 SELECT libro_id FROM libro INNER JOIN dato ON dato.dato_id=libro.dato_id WHERE dato.pagina_id=2;
 
-DELETE FROM libro WHERE libro.libro_id in ()
+DELETE FROM libro WHERE libro.libro_id in ();
+
+UPDATE dato SET completed=1;
 
  INSERT INTO libro(completed,
 href,

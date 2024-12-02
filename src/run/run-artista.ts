@@ -32,7 +32,7 @@ export async function inizialize() {
 
         for (const page of pageArtistas) {
 
-            const datos = await AppDataSourceMysql.getRepository(Dato).find({ where: { pagina_id: page.pagina_id } });
+            const datos = await AppDataSourceMysql.getRepository(Dato).find({ where: { pagina_id: page.pagina_id, completed: 0 } });
 
             //logger.info(`autores :${convertJson(datos)}`)
 
@@ -40,27 +40,32 @@ export async function inizialize() {
             for (const artista of datos) {
                 //buscar el ultimO
                 //if (index > 182) {
-                    try {
-                        logger.info(`autor numero ${index} page :${convertJson(page.nombre)} artista :${convertJson(artista.nombre)} }`)
-                        const obras = await run(artista.href)
+                try {
+                    logger.info(`autor numero ${index} page :${convertJson(page.nombre)} artista :${convertJson(artista.nombre)} }`)
+                    const obras = await run(artista.href)
 
-                        logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
+                    logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
 
-                        const libro_estraido = obras.map<Libro>((obra) => {
-                            return {
-                                href: obra.url_scraping,
-                                completed: 0,
-                                dato_id: artista.dato_id
-                            }
-                        })
-                        logger.info(`libros :${convertJson(libro_estraido)}`)
-                        const libro = await AppDataSourceMysql.getRepository(Libro).insert(libro_estraido);
-                    } catch (error) {
-                        logger.info(`ultimo registro ${index}`);
-                        player().play('sonido/alerta.mp3', { timeout: 5000 }, (error) => {
-                            console.log(error)
-                        })
-                    }
+                    const libro_estraido = obras.map<Libro>((obra) => {
+                        return {
+                            href: obra.url_scraping,
+                            completed: 0,
+                            dato_id: artista.dato_id
+                        }
+                    })
+                    logger.info(`libros insertados : ${convertJson(libro_estraido.length)}`)
+                    const libro = await AppDataSourceMysql.getRepository(Libro).insert(libro_estraido);
+                    const dato_update = await AppDataSourceMysql.getRepository(Dato).update(artista.dato_id!, {
+                        completed: 1,
+                        cantidad_obras:libro_estraido.length
+                    });
+
+                } catch (error) {
+                    logger.info(`ultimo registro ${index}`);
+                    player().play('sonido/alerta.mp3', { timeout: 5000 }, (error) => {
+                        console.log(error)
+                    })
+                }
                 //}
                 //const InfoObras = await runObras(obras);
                 //obras_extraidas.push(InfoObras);
