@@ -40,12 +40,12 @@ export async function scrapingArtista(url: string): Promise<Obra[]> {
         });
         return paginasEncontradas;
     }, { baseUrl });
-    
+
     let generatePages: string[] = [];
     if (pagEncontradas.length > 0) {
         const getQueryPage = new URL(pagEncontradas[pagEncontradas.length - 1]);
         const finishPage = parseInt(getQueryPage.searchParams.get("page")!)
-        
+
         for (let index = 2; index <= finishPage; index++) {
             getQueryPage.searchParams.set("page", index.toString())
             generatePages.push(getQueryPage.href)
@@ -114,6 +114,8 @@ export async function scrapingPerPagina(url: string): Promise<Obra[]> {
 
 
 export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
+    dato.url_scraping = url
+    dato.fecha = new Date(Date.now());
 
     const baseUrl = process.env.URL_SCRAPING;
     // Launch the browser and open a new blank page

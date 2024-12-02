@@ -96,18 +96,22 @@ export async function inizializeLibros() {
             const dato = await scrapingObra(libros[index].href, obra);
             logger.info(`OBRA SCRAPIADA ${convertJson(dato)}`);
             logger.info(`preparando obra numero ${index} de autores ${convertJson(dato.artistas)} obra: ${dato.nombre} codigo: ${dato.codigo}`)
-            /*   const pathOriginal = `${process.env.PATH_COMIC}/${dato.codigo}/original`;
-              const pathSmall = `${process.env.PATH_COMIC}/${dato.codigo}/small`;
-              const pathMedio = `${process.env.PATH_COMIC}/${dato.codigo}/medio`;
-              const pathBig = `${process.env.PATH_COMIC}/${dato.codigo}/big`;
-              await createFolder(dato.codigo, pathOriginal, pathSmall, pathMedio, pathBig)
-              const completadoPaginas = await scrapingPerPaginaImage(dato, pathOriginal);
-  
-              resultados.push(completadoPaginas);
-              //data base
-              logger.info(`insertando obra `)
-              const insertObra = await AppDataSource.getRepository(Obra).insert(completadoPaginas);
-              logger.info(`resultado de insercion correcto: ${convertJson(insertObra.identifiers)}`) */
+            const pathOriginal = `${process.env.PATH_COMIC}/${dato.codigo}/original`;
+            const pathSmall = `${process.env.PATH_COMIC}/${dato.codigo}/small`;
+            const pathMedio = `${process.env.PATH_COMIC}/${dato.codigo}/medio`;
+            const pathBig = `${process.env.PATH_COMIC}/${dato.codigo}/big`;
+            await createFolder(dato.codigo, pathOriginal, pathSmall, pathMedio, pathBig)
+            const completadoPaginas = await scrapingPerPaginaImage(dato, pathOriginal);
+
+            resultados.push(completadoPaginas);
+            //data base
+            logger.info(`insertando obra `)
+            const insertObra = await AppDataSource.getRepository(Obra).insert(completadoPaginas);
+            logger.info(`resultado de insercion correcto: ${convertJson(insertObra.identifiers)}`)
+
+            await AppDataSourceMysql.getRepository(Libro).update(libros[index].libro_id!, {
+                completed: 1
+            });
             //}
         } else {
             logger.info(`OBRA YA EXISTE`, libros[index].href);
