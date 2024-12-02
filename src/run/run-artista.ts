@@ -39,20 +39,22 @@ export async function inizialize() {
             let index: number = 0;
             for (const artista of datos) {
                 //buscar el ultimO
-                logger.info(`autor numero ${index} page :${convertJson(page.nombre)} artista :${convertJson(artista.nombre)} }`)
-                const obras = await run(artista.href)
+                if (index > 182) {
+                    logger.info(`autor numero ${index} page :${convertJson(page.nombre)} artista :${convertJson(artista.nombre)} }`)
+                    const obras = await run(artista.href)
 
-                logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
+                    logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
 
-                const libro_estraido = obras.map<Libro>((obra) => {
-                    return {
-                        href: obra.url_scraping,
-                        completed: 0,
-                        dato_id: artista.dato_id
-                    }
-                })
-                logger.info(`libros :${convertJson(libro_estraido)}`)
-                const libro = await AppDataSourceMysql.getRepository(Libro).insert(libro_estraido);
+                    const libro_estraido = obras.map<Libro>((obra) => {
+                        return {
+                            href: obra.url_scraping,
+                            completed: 0,
+                            dato_id: artista.dato_id
+                        }
+                    })
+                    logger.info(`libros :${convertJson(libro_estraido)}`)
+                    const libro = await AppDataSourceMysql.getRepository(Libro).insert(libro_estraido);
+                }
                 //const InfoObras = await runObras(obras);
                 //obras_extraidas.push(InfoObras);
                 index++;
