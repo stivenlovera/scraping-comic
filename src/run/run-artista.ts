@@ -6,11 +6,11 @@ import { Lenguaje } from "../entities/lenguaje.entity";
 import { Libro } from "../entities/libro.entity";
 import { Obra } from "../entities/obra.entity";
 import { PageArtista } from "../entities/pageArtista.entity";
-import { Seguimiento } from "../entities/seguimiento.entity";
 import { Tipo } from "../entities/tipo.entity";
 import { createFolder, scrapingArtista, scrapingObra, scrapingPaginaImage, scrapingPerPaginaImage } from "../scraping/scraping-artista";
 import { convertJson } from "../utils/conversiones";
 import 'dotenv/config';
+import player from 'play-sound'
 
 async function run(url: string) {
     const doujins = await scrapingArtista(url)
@@ -40,20 +40,27 @@ export async function inizialize() {
             for (const artista of datos) {
                 //buscar el ultimO
                 if (index > 182) {
-                    logger.info(`autor numero ${index} page :${convertJson(page.nombre)} artista :${convertJson(artista.nombre)} }`)
-                    const obras = await run(artista.href)
+                    try {
+                        logger.info(`autor numero ${index} page :${convertJson(page.nombre)} artista :${convertJson(artista.nombre)} }`)
+                        const obras = await run(artista.href)
 
-                    logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
+                        logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
 
-                    const libro_estraido = obras.map<Libro>((obra) => {
-                        return {
-                            href: obra.url_scraping,
-                            completed: 0,
-                            dato_id: artista.dato_id
-                        }
-                    })
-                    logger.info(`libros :${convertJson(libro_estraido)}`)
-                    const libro = await AppDataSourceMysql.getRepository(Libro).insert(libro_estraido);
+                        const libro_estraido = obras.map<Libro>((obra) => {
+                            return {
+                                href: obra.url_scraping,
+                                completed: 0,
+                                dato_id: artista.dato_id
+                            }
+                        })
+                        logger.info(`libros :${convertJson(libro_estraido)}`)
+                        const libro = await AppDataSourceMysql.getRepository(Libro).insert(libro_estraido);
+                    } catch (error) {
+                        logger.info(`ultimo registro ${index}`);
+                        player().play('sonido/alerta.mp3', { timeout: 5000 }, (error) => {
+                            console.log(error)
+                        })
+                    }
                 }
                 //const InfoObras = await runObras(obras);
                 //obras_extraidas.push(InfoObras);
