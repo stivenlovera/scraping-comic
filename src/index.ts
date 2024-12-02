@@ -1,7 +1,7 @@
 
 import moment from "moment";
 import { InitializeLoggers } from "./config/logguers";
-import { inizialize } from "./run/run-artista";
+import { inizialize, inizializeLibros } from "./run/run-artista";
 import { init, initializePage } from "./run/run-artistas";
 
 export const logger = InitializeLoggers();

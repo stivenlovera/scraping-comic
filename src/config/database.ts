@@ -24,7 +24,6 @@ export const AppDataSource = new DataSource({
     //logging: false,
     entities: [
         Artista,
-        PageArtista,
         Etiqueta,
         Grupo,
         Lenguaje,

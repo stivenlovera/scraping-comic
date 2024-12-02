@@ -40,8 +40,20 @@ export async function scrapingArtista(url: string): Promise<Obra[]> {
         });
         return paginasEncontradas;
     }, { baseUrl });
+    
+    let generatePages: string[] = [];
+    if (pagEncontradas.length > 0) {
+        const getQueryPage = new URL(pagEncontradas[pagEncontradas.length - 1]);
+        const finishPage = parseInt(getQueryPage.searchParams.get("page")!)
+        
+        for (let index = 2; index <= finishPage; index++) {
+            getQueryPage.searchParams.set("page", index.toString())
+            generatePages.push(getQueryPage.href)
+        }
+        //logger.info(`paginas generadas ${convertJson(generatePages)}`);
+    }
 
-    paginacion = paginacion.concat(pagEncontradas)
+    paginacion = paginacion.concat(generatePages)
 
     await browser.close();
     //paginas actual añadida
@@ -417,10 +429,10 @@ async function proceso_descarga(browserPagina: Browser, imgURL: string | null | 
             const pageNew = await browserPagina.newPage()
             const response = await pageNew.goto(imgURL!, { timeout: 5000000, waitUntil: 'networkidle0' })
             const imageBuffer = await response!.buffer();
-        
+
             await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
             logger.info(`imagen descargada ${pathOriginal}/${index}.${formato}`);
-        
+
             paginas.push({
                 url_scraping: imgURL!,
                 numero: index,
@@ -430,7 +442,7 @@ async function proceso_descarga(browserPagina: Browser, imgURL: string | null | 
                 url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${index}.${formato}`,
                 data_scraping: imgURL!
             })
-        
+
             pageNew.close();
 
             break;
