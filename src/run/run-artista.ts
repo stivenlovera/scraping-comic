@@ -1,6 +1,8 @@
+import moment from "moment";
 import { logger } from "..";
 import { AppDataSource, AppDataSourceMysql } from "../config/database";
 import { Dato } from "../entities/data.entity";
+import { getAllLibro } from "../entities/getAllLibro";
 import { Grupo } from "../entities/grupo.entity";
 import { Lenguaje } from "../entities/lenguaje.entity";
 import { Libro } from "../entities/libro.entity";
@@ -21,60 +23,65 @@ export async function inizialize() {
     logger.info(`AppDataSourceMysql`)
     //await AppDataSource.initialize();
     await AppDataSourceMysql.initialize();
+    const mongoDB = await AppDataSource.initialize();
 
-    const letras = await AppDataSourceMysql.getRepository(PageArtista).find();
-    //logger.info(`artistas almacenado en base de datos :${convertJson(letras)}`)
+    const obras = await AppDataSourceMysql.query<getAllLibro[]>(`
+           select * from (select dato.pagina_id, pagina.nombre as pagina_nombre, libro.dato_id, dato.nombre, libro.libro_id, libro.completed, libro.href, GROUP_CONCAT( libro.libro_id SEPARATOR ',') as ids_libros, GROUP_CONCAT(libro.href  SEPARATOR ',') as links, count( DISTINCT libro.libro_id ) as cantidad from dato inner join libro on libro.dato_id=dato.dato_id inner join pagina on pagina.pagina_id=dato.pagina_id group by libro.href
+            ) as libro where  libro.pagina_id=1
+        `);
+    logger.info(`artistas almacenado en base de datos :${convertJson(obras)}`)
 
-    for (const letra of letras) {
-        const pageArtistas = await AppDataSourceMysql.getRepository(PageArtista).find({ where: { nombre: letra.nombre } });
-
-        //logger.info(`autores :${convertJson(pageArtistas)}`)
-
-        for (const page of pageArtistas) {
-
-            const datos = await AppDataSourceMysql.getRepository(Dato).find({ where: { pagina_id: page.pagina_id, completed: 0 } });
-
-            //logger.info(`autores :${convertJson(datos)}`)
-
-            let index: number = 0;
-            for (const artista of datos) {
-                //buscar el ultimO
-                //if (index > 182) {
-                try {
-                    logger.info(`autor numero ${index} page :${convertJson(page.nombre)} artista :${convertJson(artista.nombre)} }`)
-                    const obras = await run(artista.href)
-
-                    logger.info(`cantidad de obras del artista ${artista.nombre} extraidas :${obras.length}`)
-
-                    const libro_estraido = obras.map<Libro>((obra) => {
-                        return {
-                            href: obra.url_scraping,
-                            completed: 0,
-                            dato_id: artista.dato_id
-                        }
-                    })
-                    logger.info(`libros insertados : ${convertJson(libro_estraido.length)}`)
-                    const libro = await AppDataSourceMysql.getRepository(Libro).insert(libro_estraido);
-                    const dato_update = await AppDataSourceMysql.getRepository(Dato).update(artista.dato_id!, {
-                        completed: 1,
-                        cantidad_obras:libro_estraido.length
-                    });
-
-                } catch (error) {
-                    logger.info(`ultimo registro ${index}`);
-                    player().play('sonido/alerta.mp3', { timeout: 5000 }, (error) => {
-                        console.log(error)
-                    })
-                }
-                //}
-                //const InfoObras = await runObras(obras);
-                //obras_extraidas.push(InfoObras);
-                index++;
-            }
-        }
-        logger.info(`Finalizando script`)
+    let InitialStateObra: Obra = {
+        nombre: "",
+        numero_pagina: 0,
+        fecha_scraping: "",
+        fecha: moment().toDate(),
+        tipo: new Tipo,
+        grupo: new Grupo,
+        lenguaje: new Lenguaje,
+        url_scraping: "",
+        artistas: [],
+        personajes: [],
+        series: [],
+        paginas: [],
+        etiquetas: [],
+        codigo: ""
     }
 
+    for (let index = 0; index < obras.length; index++) {
+        const obra = obras[index];
+        try {
+            logger.info(`abecedario:${obra.pagina_nombre} autor:${obra.nombre} libro_id:${obra.libro_id} url:${obra.href}`)
+            const dato = await scrapingObra(obra.href, InitialStateObra);
+            logger.info(`OBRA SCRAPIADA ${convertJson(dato)}`);
+
+            dato.codigo = `${moment().format('YYMMDDHHmmss')}-${obra.libro_id}`;
+            dato.fecha = moment().toDate();
+            logger.info(`OBRA SCRAPIADA ${convertJson(moment().format('DD/MM/YYYY h:mm:ss a'))}`);
+
+            const pathOriginal = `${process.env.PATH_COMIC}/${dato.codigo}/original`;
+            const pathSmall = `${process.env.PATH_COMIC}/${dato.codigo}/small`;
+            const pathMedio = `${process.env.PATH_COMIC}/${dato.codigo}/medio`;
+            const pathBig = `${process.env.PATH_COMIC}/${dato.codigo}/big`;
+            await createFolder(dato.codigo, pathOriginal, pathSmall, pathMedio, pathBig)
+            const completadoPaginas = await scrapingPerPaginaImage(dato, pathOriginal);
+
+            //data base
+            logger.info(`insertando obra `)
+            const insertObra = await AppDataSource.getRepository(Obra).insert(completadoPaginas);
+            logger.info(`resultado de insercion correcto: ${convertJson(insertObra.identifiers)}`)
+
+            let libros_id = obra.ids_libros.split(',');
+            const ids = libros_id.map((val) => parseInt(val))
+            logger.info(`insertando id de actualizacion: ${convertJson(ids)}`)
+            await AppDataSourceMysql.getRepository(Libro).update(ids, {
+                completed: 1
+            });
+            logger.info(`actualizacion de : ${convertJson(ids)}`)
+        } catch (error) {
+            logger.error(`ERROR EN =>  abecedario:${obra.pagina_nombre} autor:${obra.nombre} libro_id:${obra.libro_id} url:${obra.href}`)
+        }
+    }
 }
 
 export async function inizializeLibros() {

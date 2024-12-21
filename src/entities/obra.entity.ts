@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, BaseEntity, OneToMany, ObjectId, ObjectIdColumn } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, BaseEntity, OneToMany, ObjectId, ObjectIdColumn, CreateDateColumn } from "typeorm";
 import { Serie } from "./serie.entity";
 import { Pagina } from "./pagina.entity";
 import { Personaje } from "./personaje.entity";
@@ -22,6 +22,7 @@ export class Obra {
     @Column()
     fecha_scraping: string;
 
+    @CreateDateColumn()
     @Column()
     fecha: Date;
 

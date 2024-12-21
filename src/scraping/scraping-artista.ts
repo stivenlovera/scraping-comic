@@ -231,9 +231,9 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
     await browser.close();
 
     //FOLDER CREATE
-    const nombre = moment().format('YYMMDDHHmmss');
-    obra.codigo = nombre;
-    obra.fecha = moment(obra.fecha_scraping, 'D MMM YYYY, hh:mm').toDate();
+    //const nombre = moment().format('YYMMDDHHmmss');
+    //obra.codigo = nombre;
+    //obra.fecha = moment(obra.fecha_scraping, 'D MMM YYYY, hh:mm').toDate();
 
     return obra;
 }
