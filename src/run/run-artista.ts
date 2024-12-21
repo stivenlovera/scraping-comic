@@ -29,7 +29,7 @@ export async function inizialize() {
            select * from (select dato.pagina_id, pagina.nombre as pagina_nombre, libro.dato_id, dato.nombre, libro.libro_id, libro.completed, libro.href, GROUP_CONCAT( libro.libro_id SEPARATOR ',') as ids_libros, GROUP_CONCAT(libro.href  SEPARATOR ',') as links, count( DISTINCT libro.libro_id ) as cantidad from dato inner join libro on libro.dato_id=dato.dato_id inner join pagina on pagina.pagina_id=dato.pagina_id group by libro.href
             ) as libro where  libro.pagina_id=1
         `);
-    logger.info(`artistas almacenado en base de datos :${convertJson(obras)}`)
+    logger.info(`artistas almacenado en base de datos :${convertJson(obras.length)}`)
 
     let InitialStateObra: Obra = {
         nombre: "",
@@ -55,7 +55,7 @@ export async function inizialize() {
             const dato = await scrapingObra(obra.href, InitialStateObra);
             logger.info(`OBRA SCRAPIADA ${convertJson(dato)}`);
 
-            dato.codigo = `${moment().format('YYMMDDHHmmss')}-${obra.libro_id}`;
+            dato.codigo = `${moment().format('YYMMDDHHmmss')}-${obra.pagina_id}`;
             dato.fecha = moment().toDate();
             logger.info(`OBRA SCRAPIADA ${convertJson(moment().format('DD/MM/YYYY h:mm:ss a'))}`);
 
