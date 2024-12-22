@@ -15,12 +15,18 @@ import { Seguimiento } from "../entities/seguimiento.entity";
 import { Dato } from "../entities/data.entity";
 import { Libro } from "../entities/libro.entity";
 
+
+
 export const AppDataSource = new DataSource({
     type: "mongodb",
     host: process.env.DATABASE_HOST,
     port: parseInt(process.env.DATABASE_PORT!),
     database: process.env.DATABASE,
+    password: process.env.DATABASE_PASS,,
     synchronize: false,
+    username: process.env.DATABASE_USERNAME,
+    authSource: process.env.DATABASE_AUTH,
+    //url:`mongodb://${process.env.DATABASE_USERNAME}:${process.env.DATABASE_PASS}@${process.env.DATABASE_HOST}:${parseInt(process.env.DATABASE_PORT!)}/${process.env.DATABASE}?authSource=${process.env.DATABASE_AUTH}`,
     //logging: false,
     entities: [
         Artista,
@@ -42,12 +48,13 @@ export const AppDataSourceMysql = new DataSource({
     port: parseInt(process.env.DATABASE_MYSQL_PORT!),
     database: process.env.DATABASE_MYSQL,
     synchronize: false,
-    username:process.env.DATABASE_MYSQL_USERNAME,
+    password: process.env.DATABASE_MYSQL_PASS,
+    username: process.env.DATABASE_MYSQL_USERNAME,
     //logging: false,
     entities: [
         Dato,
         PageArtista,
         Libro
     ],
-    charset:'utf8mb4_unicode_ci'
+    charset: 'utf8mb4_unicode_ci'
 });

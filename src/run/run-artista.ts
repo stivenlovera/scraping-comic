@@ -24,7 +24,6 @@ export async function inizialize() {
     //await AppDataSource.initialize();
     await AppDataSourceMysql.initialize();
     const mongoDB = await AppDataSource.initialize();
-
     const obras = await AppDataSourceMysql.query<getAllLibro[]>(`
            select * from (select dato.pagina_id, pagina.nombre as pagina_nombre, libro.dato_id, dato.nombre, libro.libro_id, libro.completed, libro.href, GROUP_CONCAT( libro.libro_id SEPARATOR ',') as ids_libros, GROUP_CONCAT(libro.href  SEPARATOR ',') as links, count( DISTINCT libro.libro_id ) as cantidad from dato inner join libro on libro.dato_id=dato.dato_id inner join pagina on pagina.pagina_id=dato.pagina_id group by libro.href
 ) as libro where libro.completed=0 and libro.pagina_id=1 
@@ -67,19 +66,19 @@ export async function inizialize() {
             const completadoPaginas = await scrapingPerPaginaImage(dato, pathOriginal);
 
             //data base
-            logger.info(`insertando obra `)
+            logger.info(`insertando obra mongo`)
             const insertObra = await AppDataSource.getRepository(Obra).insert(completadoPaginas);
-            logger.info(`resultado de insercion correcto: ${convertJson(insertObra.identifiers)}`)
+            logger.info(`resultado de insercion correcto mongo: ${convertJson(insertObra.identifiers)}`)
 
             let libros_id = obra.ids_libros.split(',');
             const ids = libros_id.map((val) => parseInt(val))
-            logger.info(`insertando id de actualizacion: ${convertJson(ids)}`)
+            logger.info(`insertando id de actualizacion mysql: ${convertJson(ids)}`)
             await AppDataSourceMysql.getRepository(Libro).update(ids, {
                 completed: 1
             });
-            logger.info(`actualizacion de : ${convertJson(ids)}`)
+            logger.info(`actualizacion de mysql: ${convertJson(ids)}`)
         } catch (error) {
-            logger.error(`ERROR EN =>  abecedario:${obra.pagina_nombre} autor:${obra.nombre} libro_id:${obra.libro_id} url:${obra.href}`)
+            logger.error(`ERROR EN =>  abecedario:${obra.pagina_nombre} autor:${obra.nombre} libro_id:${obra.libro_id} url:${obra.href}` + error)
         }
     }
 }
@@ -126,9 +125,10 @@ export async function inizializeLibros() {
 
             resultados.push(completadoPaginas);
             //data base
-            logger.info(`insertando obra `)
-            const insertObra = await AppDataSource.getRepository(Obra).insert(completadoPaginas);
-            logger.info(`resultado de insercion correcto: ${convertJson(insertObra.identifiers)}`)
+            logger.info(`insertando obra en mongo`)
+            const insertObra = await mongoDB.getRepository(Obra).insert(completadoPaginas);
+            logger.info(`resultado de insercion correcto mongo: ${convertJson(insertObra.identifiers)}`)
+
 
             await AppDataSourceMysql.getRepository(Libro).update(libros[index].libro_id!, {
                 completed: 1
