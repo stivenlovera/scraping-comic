@@ -11,6 +11,7 @@ import puppeteer from 'puppeteer-extra'
 import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker'
 import { Browser } from 'puppeteer';
 import player from 'play-sound'
+import { ExceptionHandler } from 'winston';
 
 export async function scrapingArtista(url: string): Promise<Obra[]> {
     const baseUrl = process.env.URL_SCRAPING;
@@ -308,72 +309,65 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
     puppeteer.use(AdblockerPlugin({ blockTrackers: true }))
     let paginas: Pagina[] = [];
 
-    const url = resultados.paginas[0].url_scraping
     const browserPagina = await puppeteer.launch({
         headless: false,
         slowMo: 100
     });
 
-    logger.info(`Scrapeando informacion imagen ${url}`);
     const page = await browserPagina.newPage();
+    let index = 0
+
+    const url = resultados.paginas[index].url_scraping
+
     await page.goto(url);
 
-    for (let index = 1; index < 10000; index++) {
+    for (index; index < 10000; index++) {
+        try {
+            logger.info(`pagina ${index}`);
+            await page.waitForSelector('img[src][class="lillie"]')
+            const imgURL = await page!.evaluate(() => {
+                const picture = document.querySelectorAll('#comicImages>picture')[0]
+                const srcset = picture.children.item(0)?.getAttribute('srcset')
+                const src = picture.children.item(0)?.getAttribute('src')
+                if (srcset == null) {
+                    return src
+                } else {
+                    return srcset
+                }
+            })
 
-        logger.info(`pagina ${index}`);
-        await page.waitForSelector('img[src][class="lillie"]')
-        const imgURL = await page!.evaluate(() => {
-            const picture = document.querySelectorAll('#comicImages>picture')[0]
-            const srcset = picture.children.item(0)?.getAttribute('srcset')
-            const src = picture.children.item(0)?.getAttribute('src')
-            if (srcset == null) {
-                return src
+            logger.info(`url de descarga ${imgURL}`);
+            const formato = stringToFormat(imgURL!)
+            await proceso_descarga(browserPagina, imgURL, pathOriginal, index, paginas, formato);
+            const validate = await page!.evaluate(() => {
+                if (document.querySelector('#nextPanel>i.icon-chevron-left.icon-white')?.isConnected) {
+                    return true;
+                } else {
+                    return false;
+                }
+            });
+
+            if (validate) {
+                logger.info(`siguiente pagina ${validate}`);
+                await page.click('#nextPanel')
             } else {
-                return srcset
+                logger.info(`ultima pagina ${resultados.numero_pagina}`);
+                resultados.numero_pagina = index;
+                break;
             }
-        })
-        logger.info(`url de descarga ${imgURL}`);
-        const formato = stringToFormat(imgURL!)
-        await proceso_descarga(browserPagina, imgURL, pathOriginal, index, paginas, formato);
-
-        /* const pageNew = await browserPagina.newPage()
-        const response = await pageNew.goto(imgURL!, { timeout: 5000000, waitUntil: 'networkidle0' })
-        const imageBuffer = await response!.buffer();
-        
-
-        await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
-        logger.info(`imagen descargada ${pathOriginal}/${index}.${formato}`);
-
-        paginas.push({
-            url_scraping: imgURL!,
-            numero: index,
-            url_big: '',
-            url_medio: '',
-            url_small: '',
-            url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${index}.${formato}`,
-            data_scraping: imgURL!
-        })
-
-        pageNew.close(); */
-
-        const validate = await page!.evaluate(() => {
-            if (document.querySelector('#nextPanel>i.icon-chevron-left.icon-white')?.isConnected) {
-                return true;
-            } else {
-                return false;
-            }
-        });
-
-        if (validate) {
-            logger.info(`siguiente pagina ${validate}`);
-            await page.click('#nextPanel')
-        } else {
-            logger.info(`ultima pagina ${resultados.numero_pagina}`);
-            resultados.numero_pagina = index;
-            break;
+        } catch (error) {
+            logger.error(`ERROR GENERADO EN PAGINA ${index} REINTENTANDO ....`);
+            index = index - 1
+            await page.reload()
+            logger.error(`Cerrando pestaña cerrada`);
+            player().play('sonido/alerta.mp3', { timeout: 5000 }, (error) => {
+                console.log(error)
+            })
+        }
+        finally {
+            logger.info(`TODO OK SIGUIENTE`);
         }
     }
-
     resultados.paginas = paginas;
     await page.close()
     await browserPagina.close();
@@ -386,9 +380,6 @@ export async function createFolder(codigo: string, pathOriginal: string, pathSma
     if (!fs.existsSync(`${path}/${codigo}`)) {
         fs.mkdirSync(`${path}/${codigo}`);
         fs.mkdirSync(pathOriginal);
-        /* fs.mkdirSync(pathSmall);
-        fs.mkdirSync(pathMedio);
-        fs.mkdirSync(pathBig); */
     }
 }
 
@@ -421,43 +412,26 @@ export async function OptimizarSmall(pathImagen: string, nameFile: string, pathS
 
 async function proceso_descarga(browserPagina: Browser, imgURL: string | null | undefined, pathOriginal: string, index: number, paginas: Pagina[], formato: string) {
 
-    let detectError: boolean = false;
-    let intentos: number = 0;
-    while (!detectError) {
-        intentos++;
-        try {
-            logger.info(`preparando descarga desde ${imgURL}`);
+    logger.info(`preparando descarga desde ${imgURL}`);
 
-            const pageNew = await browserPagina.newPage()
-            const response = await pageNew.goto(imgURL!, { timeout: 5000000, waitUntil: 'networkidle0' })
-            const imageBuffer = await response!.buffer();
+    const pageNew = await browserPagina.newPage()
+    const response = await pageNew.goto(imgURL!, { timeout: 5000, waitUntil: 'networkidle0' })
+    const imageBuffer = await response!.buffer();
 
-            await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
-            logger.info(`imagen descargada ${pathOriginal}/${index}.${formato}`);
+    await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
+    logger.info(`imagen descargada ${pathOriginal}/${index}.${formato}`);
 
-            paginas.push({
-                url_scraping: imgURL!,
-                numero: index,
-                url_big: '',
-                url_medio: '',
-                url_small: '',
-                url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${index}.${formato}`,
-                data_scraping: imgURL!
-            })
+    paginas.push({
+        url_scraping: imgURL!,
+        numero: index,
+        url_big: '',
+        url_medio: '',
+        url_small: '',
+        url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${index}.${formato}`,
+        data_scraping: imgURL!
+    })
 
-            pageNew.close();
-
-            break;
-        } catch (error) {
-            logger.info(`error generado ${error}`);
-            logger.info(`intentos ${intentos}`);
-            player().play('sonido/alerta.mp3', { timeout: 5000 }, (error) => {
-                console.log(error)
-            })
-            detectError = false;
-
-        }
-    }
+    pageNew.close();
 
     return paginas;
 }

@@ -79,6 +79,11 @@ export async function inizialize() {
             logger.info(`actualizacion de mysql: ${convertJson(ids)}`)
         } catch (error) {
             logger.error(`ERROR EN =>  abecedario:${obra.pagina_nombre} autor:${obra.nombre} libro_id:${obra.libro_id} url:${obra.href}` + error)
+            logger.error(`REINTENTANDO...`)
+            index = index - 1
+        }
+        finally {
+            logger.info(`OBRA REGISTRADA Y ACTUALIZADA`);
         }
     }
 }

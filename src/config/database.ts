@@ -22,7 +22,7 @@ export const AppDataSource = new DataSource({
     host: process.env.DATABASE_HOST,
     port: parseInt(process.env.DATABASE_PORT!),
     database: process.env.DATABASE,
-    password: process.env.DATABASE_PASS,,
+    password: process.env.DATABASE_PASS,
     synchronize: false,
     username: process.env.DATABASE_USERNAME,
     authSource: process.env.DATABASE_AUTH,
