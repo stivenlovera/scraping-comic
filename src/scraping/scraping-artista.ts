@@ -128,8 +128,12 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
     logger.info(`Scrapeando informacion de obra ${url}`);
     const page = await browser.newPage();
 
-    await page.goto(url);
+    const httpResponse = await page.goto(url);
 
+    if (httpResponse?.status() !== 200) {
+        await browser.close();
+        throw new Error("ERROR DE PAGINA SALTANDO A LA PROXIMA");
+    }
     const obra = await page.evaluate(({ dato, baseUrl }) => {
         dato.nombre = document.getElementById('gallery-brand')!.querySelector('a')!.innerText;
         console.log('nombre')
@@ -230,12 +234,6 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
 
     //await page.screenshot({ path: 'capturas/hitomi.png' })
     await browser.close();
-
-    //FOLDER CREATE
-    //const nombre = moment().format('YYMMDDHHmmss');
-    //obra.codigo = nombre;
-    //obra.fecha = moment(obra.fecha_scraping, 'D MMM YYYY, hh:mm').toDate();
-
     return obra;
 }
 
@@ -413,14 +411,18 @@ export async function OptimizarSmall(pathImagen: string, nameFile: string, pathS
 async function proceso_descarga(browserPagina: Browser, imgURL: string | null | undefined, pathOriginal: string, index: number, paginas: Pagina[], formato: string) {
 
     logger.info(`preparando descarga desde ${imgURL}`);
-
     const pageNew = await browserPagina.newPage()
-    const response = await pageNew.goto(imgURL!, { timeout: 5000, waitUntil: 'networkidle0' })
-    const imageBuffer = await response!.buffer();
 
-    await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
-    logger.info(`imagen descargada ${pathOriginal}/${index}.${formato}`);
-
+    try {
+        const response = await pageNew.goto(imgURL!, { timeout: 5000, waitUntil: 'networkidle0' })
+        const imageBuffer = await response!.buffer();
+        await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
+        logger.info(`imagen descargada ${pathOriginal}/${index}.${formato}`);
+    }
+    finally {
+        pageNew.close();
+    }
+    logger.info(`paginas puch`);
     paginas.push({
         url_scraping: imgURL!,
         numero: index,
@@ -430,8 +432,6 @@ async function proceso_descarga(browserPagina: Browser, imgURL: string | null | 
         url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${index}.${formato}`,
         data_scraping: imgURL!
     })
-
-    pageNew.close();
 
     return paginas;
 }

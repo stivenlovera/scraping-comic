@@ -26,7 +26,7 @@ export async function inizialize() {
     const mongoDB = await AppDataSource.initialize();
     const obras = await AppDataSourceMysql.query<getAllLibro[]>(`
            select * from (select dato.pagina_id, pagina.nombre as pagina_nombre, libro.dato_id, dato.nombre, libro.libro_id, libro.completed, libro.href, GROUP_CONCAT( libro.libro_id SEPARATOR ',') as ids_libros, GROUP_CONCAT(libro.href  SEPARATOR ',') as links, count( DISTINCT libro.libro_id ) as cantidad from dato inner join libro on libro.dato_id=dato.dato_id inner join pagina on pagina.pagina_id=dato.pagina_id group by libro.href
-) as libro where libro.completed=0 and libro.pagina_id=1 
+) as libro where libro.completed=0 and libro.pagina_id=1
         `);
     logger.info(`artistas almacenado en base de datos :${convertJson(obras.length)}`)
 
@@ -79,11 +79,15 @@ export async function inizialize() {
             logger.info(`actualizacion de mysql: ${convertJson(ids)}`)
         } catch (error) {
             logger.error(`ERROR EN =>  abecedario:${obra.pagina_nombre} autor:${obra.nombre} libro_id:${obra.libro_id} url:${obra.href}` + error)
-            logger.error(`REINTENTANDO...`)
-            index = index - 1
+            if (error == 'Error: ERROR DE PAGINA SALTANDO A LA PROXIMA') {
+                logger.error(error)
+            }
+            else {
+                logger.error(`REINTENTANDO...`)
+                index = index - 1
+            }
         }
         finally {
-            logger.info(`OBRA REGISTRADA Y ACTUALIZADA`);
         }
     }
 }
