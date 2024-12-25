@@ -416,20 +416,20 @@ async function proceso_descarga(browserPagina: Browser, imgURL: string | null | 
     try {
         const response = await pageNew.goto(imgURL!, { timeout: 30000, waitUntil: 'networkidle0' })
         const imageBuffer = await response!.buffer();
-        await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
-        logger.info(`imagen descargada ${pathOriginal}/${index}.${formato}`);
+        await fs.promises.writeFile(`${pathOriginal}/${(index + 1)}.${formato}`, imageBuffer);
+        logger.info(`imagen descargada ${pathOriginal}/${(index + 1)}.${formato}`);
     }
     finally {
         pageNew.close();
     }
-    logger.info(`paginas puch`);
+    
     paginas.push({
         url_scraping: imgURL!,
-        numero: index,
+        numero: (index + 1),
         url_big: '',
         url_medio: '',
         url_small: '',
-        url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${index}.${formato}`,
+        url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${(index + 1)}.${formato}`,
         data_scraping: imgURL!
     })
 
