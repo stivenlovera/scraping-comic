@@ -350,7 +350,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
                 await page.click('#nextPanel')
             } else {
                 logger.info(`ultima pagina ${resultados.numero_pagina}`);
-                resultados.numero_pagina = index;
+                resultados.numero_pagina = index + 1;
                 break;
             }
         } catch (error) {
