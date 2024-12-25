@@ -414,7 +414,7 @@ async function proceso_descarga(browserPagina: Browser, imgURL: string | null | 
     const pageNew = await browserPagina.newPage()
 
     try {
-        const response = await pageNew.goto(imgURL!, { timeout: 5000, waitUntil: 'networkidle0' })
+        const response = await pageNew.goto(imgURL!, { timeout: 30000, waitUntil: 'networkidle0' })
         const imageBuffer = await response!.buffer();
         await fs.promises.writeFile(`${pathOriginal}/${index}.${formato}`, imageBuffer);
         logger.info(`imagen descargada ${pathOriginal}/${index}.${formato}`);
