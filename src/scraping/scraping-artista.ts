@@ -225,7 +225,7 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
                     url_original: ''
                 })
             })
-            dato.numero_pagina = [...li].length
+            dato.numero_pagina = ([...li].length + 1) //paginas
             console.log('cantidad paginas', [...li].length)
         })
         console.log('paginas final')
@@ -412,24 +412,24 @@ async function proceso_descarga(browserPagina: Browser, imgURL: string | null | 
 
     logger.info(`preparando descarga desde ${imgURL}`);
     const pageNew = await browserPagina.newPage()
-
+    const num_pagina = index + 1
     try {
         const response = await pageNew.goto(imgURL!, { timeout: 30000, waitUntil: 'networkidle0' })
         const imageBuffer = await response!.buffer();
-        await fs.promises.writeFile(`${pathOriginal}/${(index + 1)}.${formato}`, imageBuffer);
-        logger.info(`imagen descargada ${pathOriginal}/${(index + 1)}.${formato}`);
+        await fs.promises.writeFile(`${pathOriginal}/${num_pagina}.${formato}`, imageBuffer);
+        logger.info(`imagen descargada ${pathOriginal}/${num_pagina}.${formato}`);
     }
     finally {
         pageNew.close();
     }
-    
+
     paginas.push({
         url_scraping: imgURL!,
-        numero: (index + 1),
+        numero: num_pagina,
         url_big: '',
         url_medio: '',
         url_small: '',
-        url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${(index + 1)}.${formato}`,
+        url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${num_pagina}.${formato}`,
         data_scraping: imgURL!
     })
 
