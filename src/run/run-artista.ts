@@ -12,7 +12,6 @@ import { Tipo } from "../entities/tipo.entity";
 import { createFolder, scrapingArtista, scrapingObra, scrapingPaginaImage, scrapingPerPaginaImage } from "../scraping/scraping-artista";
 import { convertJson } from "../utils/conversiones";
 import 'dotenv/config';
-import player from 'play-sound'
 
 async function run(url: string) {
     const doujins = await scrapingArtista(url)
@@ -20,13 +19,13 @@ async function run(url: string) {
 }
 
 export async function inizialize() {
-    logger.info(`AppDataSourceMysql`)
-    //await AppDataSource.initialize();
+    const pagina = process.env.NUM_PAGINA;
+
     await AppDataSourceMysql.initialize();
     const mongoDB = await AppDataSource.initialize();
     const obras = await AppDataSourceMysql.query<getAllLibro[]>(`
            select * from (select dato.pagina_id, pagina.nombre as pagina_nombre, libro.dato_id, dato.nombre, libro.libro_id, libro.completed, libro.href, GROUP_CONCAT( libro.libro_id SEPARATOR ',') as ids_libros, GROUP_CONCAT(libro.href  SEPARATOR ',') as links, count( DISTINCT libro.libro_id ) as cantidad from dato inner join libro on libro.dato_id=dato.dato_id inner join pagina on pagina.pagina_id=dato.pagina_id group by libro.href
-) as libro where libro.completed=0 and libro.pagina_id=1
+) as libro where libro.completed=0 and libro.pagina_id=${pagina}
         `);
     logger.info(`artistas almacenado en base de datos :${convertJson(obras.length)}`)
 
@@ -67,7 +66,7 @@ export async function inizialize() {
 
             //data base
             logger.info(`insertando obra mongo`)
-            const insertObra = await AppDataSource.getRepository(Obra).insert(completadoPaginas);
+            const insertObra = await mongoDB.getRepository(Obra).insert(completadoPaginas);
             logger.info(`resultado de insercion correcto mongo: ${convertJson(insertObra.identifiers)}`)
 
             let libros_id = obra.ids_libros.split(',');

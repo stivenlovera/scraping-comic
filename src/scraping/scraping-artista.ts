@@ -11,7 +11,6 @@ import puppeteer from 'puppeteer-extra'
 import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker'
 import { Browser } from 'puppeteer';
 import player from 'play-sound'
-import { ExceptionHandler } from 'winston';
 
 export async function scrapingArtista(url: string): Promise<Obra[]> {
     const baseUrl = process.env.URL_SCRAPING;
@@ -121,7 +120,7 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
     const baseUrl = process.env.URL_SCRAPING;
     // Launch the browser and open a new blank page
     const browser = await puppeteer.launch({
-        headless: false,
+        headless: 'shell',
         slowMo: 400
     });
 
@@ -308,7 +307,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
     let paginas: Pagina[] = [];
 
     const browserPagina = await puppeteer.launch({
-        headless: false,
+        headless: 'shell',
         slowMo: 100
     });
 
