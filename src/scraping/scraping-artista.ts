@@ -126,7 +126,7 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
     logger.info(`Scrapeando informacion de obra ${url}`);
     const page = await browser.newPage();
 
-    const httpResponse = await page.goto(url,{ timeout: 60000, waitUntil: 'networkidle0' });
+    const httpResponse = await page.goto(url, { timeout: 60000, waitUntil: 'networkidle0' });
 
     if (httpResponse?.status() !== 200) {
         await browser.close();
@@ -330,7 +330,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
                     return srcset
                 }
             })
-
+            resultados.paginas[index].url_scraping = page.url()
             logger.info(`url de descarga ${resultados.paginas[index].url_scraping}`);
             const formato = stringToFormat(imgURL!)
             await proceso_descarga(browserPagina, imgURL, pathOriginal, index, paginas, formato);
@@ -346,7 +346,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
                 logger.info(`siguiente pagina ${validate}`);
                 await page.click('#nextPanel')
             } else {
-                logger.info(`ultima pagina ${resultados.numero_pagina}`);
+                logger.info(`ultima pagina`);
                 resultados.numero_pagina = index + 1;
                 break;
             }
