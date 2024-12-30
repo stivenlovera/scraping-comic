@@ -51,7 +51,6 @@ export async function inizialize() {
         try {
             logger.info(`abecedario:${obra.pagina_nombre} autor:${obra.nombre} libro_id:${obra.libro_id} url:${obra.href}`)
             const dato = await scrapingObra(obra.href, InitialStateObra);
-            logger.info(`OBRA SCRAPIADA ${convertJson(dato)}`);
 
             dato.codigo = `${moment().format('YYMMDDHHmmss')}-${obra.pagina_id}`;
             dato.fecha = moment().toDate();

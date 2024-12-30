@@ -120,14 +120,13 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
     const baseUrl = process.env.URL_SCRAPING;
     // Launch the browser and open a new blank page
     const browser = await puppeteer.launch({
-        headless: 'shell',
-        slowMo: 400
+        headless: 'shell'
     });
 
     logger.info(`Scrapeando informacion de obra ${url}`);
     const page = await browser.newPage();
 
-    const httpResponse = await page.goto(url);
+    const httpResponse = await page.goto(url,{ timeout: 60000, waitUntil: 'networkidle0' });
 
     if (httpResponse?.status() !== 200) {
         await browser.close();
@@ -307,8 +306,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
     let paginas: Pagina[] = [];
 
     const browserPagina = await puppeteer.launch({
-        headless: 'shell',
-        slowMo: 100
+        headless: 'shell'
     });
 
     const page = await browserPagina.newPage();
@@ -316,7 +314,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
 
     const url = resultados.paginas[index].url_scraping
 
-    await page.goto(url);
+    await page.goto(url, { timeout: 60000, waitUntil: 'networkidle0' });
 
     for (index; index < 10000; index++) {
         try {
@@ -333,7 +331,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
                 }
             })
 
-            logger.info(`url de descarga ${imgURL}`);
+            logger.info(`url de descarga ${url}`);
             const formato = stringToFormat(imgURL!)
             await proceso_descarga(browserPagina, imgURL, pathOriginal, index, paginas, formato);
             const validate = await page!.evaluate(() => {
@@ -357,12 +355,9 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
             index = index - 1
             await page.reload()
             logger.error(`Cerrando pestaña cerrada`);
-            player().play('sonido/alerta.mp3', { timeout: 5000 }, (error) => {
-                console.log(error)
-            })
         }
         finally {
-            logger.info(`TODO OK SIGUIENTE`);
+
         }
     }
     resultados.paginas = paginas;
