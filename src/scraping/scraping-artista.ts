@@ -413,7 +413,7 @@ async function proceso_descarga(browserPagina: Browser, imgURL: string | null | 
     const pageNew = await browserPagina.newPage()
     const num_pagina = index + 1
     try {
-        const response = await pageNew.goto(imgURL!, { timeout: 30000, waitUntil: 'networkidle0' })
+        const response = await pageNew.goto(imgURL!, { timeout: 120000, waitUntil: 'networkidle0' })
         const imageBuffer = await response!.buffer();
         await fs.promises.writeFile(`${pathOriginal}/${num_pagina}.${formato}`, imageBuffer);
         logger.info(`imagen descargada ${pathOriginal}/${num_pagina}.${formato}`);
