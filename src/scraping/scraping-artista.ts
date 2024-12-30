@@ -331,7 +331,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
                 }
             })
 
-            logger.info(`url de descarga ${url}`);
+            logger.info(`url de descarga ${imgURL}`);
             const formato = stringToFormat(imgURL!)
             await proceso_descarga(browserPagina, imgURL, pathOriginal, index, paginas, formato);
             const validate = await page!.evaluate(() => {
