@@ -17,7 +17,7 @@ export function InitializeLoggers() {
     }
 
     const myFormat = printf(({ level, message, label, timestamp }) => {
-        return `${timestamp} [${level}]: ${message}`;
+        return `${timestamp} [pagina_id:${process.env.NUM_PAGINA}] [${level}]: ${message}`;
     });
 
     var logger = winston.createLogger({
