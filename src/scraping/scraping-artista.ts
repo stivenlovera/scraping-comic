@@ -330,10 +330,10 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
                     return srcset
                 }
             })
-            resultados.paginas[index].url_scraping = page.url()
-            logger.info(`url de descarga ${resultados.paginas[index].url_scraping}`);
+            const url_pagina = page.url()
+            logger.info(`url de descarga ${url_pagina}`);
             const formato = stringToFormat(imgURL!)
-            await proceso_descarga(browserPagina, imgURL, pathOriginal, index, paginas, formato);
+            await proceso_descarga(browserPagina, imgURL, pathOriginal, index, paginas, formato, url_pagina);
             const validate = await page!.evaluate(() => {
                 if (document.querySelector('#nextPanel>i.icon-chevron-left.icon-white')?.isConnected) {
                     return true;
@@ -402,7 +402,7 @@ export async function OptimizarSmall(pathImagen: string, nameFile: string, pathS
 }
 
 
-async function proceso_descarga(browserPagina: Browser, imgURL: string | null | undefined, pathOriginal: string, index: number, paginas: Pagina[], formato: string) {
+async function proceso_descarga(browserPagina: Browser, imgURL: string | null | undefined, pathOriginal: string, index: number, paginas: Pagina[], formato: string, url_pagina:string) {
 
     logger.info(`preparando descarga desde ${imgURL}`);
     const pageNew = await browserPagina.newPage()
@@ -418,7 +418,7 @@ async function proceso_descarga(browserPagina: Browser, imgURL: string | null | 
     }
 
     paginas.push({
-        url_scraping: imgURL!,
+        url_scraping: url_pagina,
         numero: num_pagina,
         url_big: '',
         url_medio: '',
