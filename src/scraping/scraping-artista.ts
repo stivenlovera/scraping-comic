@@ -132,107 +132,113 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
         await browser.close();
         throw new Error("ERROR DE PAGINA SALTANDO A LA PROXIMA");
     }
-    const obra = await page.evaluate(({ dato, baseUrl }) => {
-        dato.nombre = document.getElementById('gallery-brand')!.querySelector('a')!.innerText;
-        console.log('nombre')
-        dato.grupo = {
-            nombre: document.getElementById('groups')!.innerText
-        };
-        console.log('grupo')
-        const tipo = document.querySelectorAll('#type');
-        const dataTipo = [...tipo].map((ele) => {
-            dato.tipo = {
-                nombre: ele.querySelector('a')!.innerText
-            }
-        })
-        console.log('tipo')
-        const artistas = document.querySelectorAll('#artists>ul.comma-list');
-        const dataArtista = [...artistas].map((ele) => {
-            const li = ele.querySelectorAll('li');
-            const dataLi = [...li].map((li) => {
-                dato.artistas.push({
-                    nombre: li.querySelector('a')!.innerText,
-                    cantidad: 0,
-                    href: ''
-                })
-                return li.querySelector('a')!.innerText;
-            })
-            return dataLi
-        });
-        console.log('artistas')
-        const lenguaje = document.querySelectorAll('#language');
-        [...lenguaje].map((ele) => {
-            if (ele.querySelector('a')?.innerText != null || ele.querySelector('a')?.innerText != undefined) {
-                dato.lenguaje = {
+
+    try {
+        const obra = await page.evaluate(({ dato, baseUrl }) => {
+            dato.nombre = document.getElementById('gallery-brand')!.querySelector('a')!.innerText;
+            console.log('nombre')
+
+            dato.grupo = {
+                nombre: document.getElementById('groups')!.innerText
+            };
+            console.log('grupo')
+            const tipo = document.querySelectorAll('#type');
+            const dataTipo = [...tipo].map((ele) => {
+                dato.tipo = {
                     nombre: ele.querySelector('a')!.innerText
-                };
-            }
-        })
-        console.log('lenguaje')
-        const personajes = document.querySelectorAll('#characters');
-        [...personajes].map((ele) => {
-            const li = ele.querySelectorAll('li');
-            [...li].map((li) => {
-                if (li.querySelector('a')?.innerText != undefined || li.querySelector('a')?.innerText != null) {
-                    dato.personajes.push({
+                }
+            })
+            console.log('tipo')
+            const artistas = document.querySelectorAll('#artists>ul.comma-list');
+            const dataArtista = [...artistas].map((ele) => {
+                const li = ele.querySelectorAll('li');
+                const dataLi = [...li].map((li) => {
+                    dato.artistas.push({
+                        nombre: li.querySelector('a')!.innerText,
+                        cantidad: 0,
+                        href: ''
+                    })
+                    return li.querySelector('a')!.innerText;
+                })
+                return dataLi
+            });
+            console.log('artistas')
+            const lenguaje = document.querySelectorAll('#language');
+            [...lenguaje].map((ele) => {
+                if (ele.querySelector('a')?.innerText != null || ele.querySelector('a')?.innerText != undefined) {
+                    dato.lenguaje = {
+                        nombre: ele.querySelector('a')!.innerText
+                    };
+                }
+            })
+            console.log('lenguaje')
+            const personajes = document.querySelectorAll('#characters');
+            [...personajes].map((ele) => {
+                const li = ele.querySelectorAll('li');
+                [...li].map((li) => {
+                    if (li.querySelector('a')?.innerText != undefined || li.querySelector('a')?.innerText != null) {
+                        dato.personajes.push({
+                            nombre: li.querySelector('a')!.innerText
+                        });
+                    }
+                })
+            })
+            console.log('personajes')
+            const etiquetas = document.querySelectorAll('#tags');
+            [...etiquetas].map((ele) => {
+                const li = ele.querySelectorAll('li');
+                [...li].map((li) => {
+                    if ((li.querySelector('a')?.innerText) != null || (li.querySelector('a')?.innerText) != undefined) {
+                        dato.etiquetas.push({
+                            nombre: (li.querySelector('a')!.innerText).replace(/[^a-zA-Z0-9 ]/g, '').trim()
+                        });
+                    }
+                })
+            })
+            console.log('etiquetas')
+            const series = document.querySelectorAll('#series ul.comma-list');
+            [...series].map((ele) => {
+                const li = ele.querySelectorAll('li');
+                [...li].map((li) => {
+                    dato.series.push({
                         nombre: li.querySelector('a')!.innerText
                     });
-                }
-            })
-        })
-        console.log('personajes')
-        const etiquetas = document.querySelectorAll('#tags');
-        [...etiquetas].map((ele) => {
-            const li = ele.querySelectorAll('li');
-            [...li].map((li) => {
-                if ((li.querySelector('a')?.innerText) != null || (li.querySelector('a')?.innerText) != undefined) {
-                    dato.etiquetas.push({
-                        nombre: (li.querySelector('a')!.innerText).replace(/[^a-zA-Z0-9 ]/g, '').trim()
-                    });
-                }
-            })
-        })
-        console.log('etiquetas')
-        const series = document.querySelectorAll('#series ul.comma-list');
-        [...series].map((ele) => {
-            const li = ele.querySelectorAll('li');
-            [...li].map((li) => {
-                dato.series.push({
-                    nombre: li.querySelector('a')!.innerText
-                });
-            })
-        })
-        console.log('series')
-        const fecha = document.querySelectorAll('span.date');
-        [...fecha].map((ele) => {
-            dato.fecha_scraping = ele.innerHTML;
-        })
-        console.log('fecha')
-        const paginas = document.querySelectorAll('.thumbnail-list');
-        [...paginas].map((ele) => {
-            const li = ele.querySelectorAll('li');
-            [...li].map((li, i) => {
-                const aux = li.querySelector('a');
-                dato.paginas.push({
-                    url_scraping: baseUrl + aux?.getAttribute('href')!,
-                    numero: i + 1,
-                    url_big: '',
-                    url_medio: '',
-                    url_small: '',
-                    data_scraping: '',
-                    url_original: ''
                 })
             })
-            dato.numero_pagina = ([...li].length + 1) //paginas
-            console.log('cantidad paginas', [...li].length)
-        })
-        console.log('paginas final')
-        return dato;
-    }, { dato, baseUrl });
+            console.log('series')
+            const fecha = document.querySelectorAll('span.date');
+            [...fecha].map((ele) => {
+                dato.fecha_scraping = ele.innerHTML;
+            })
+            console.log('fecha')
+            const paginas = document.querySelectorAll('.thumbnail-list');
+            [...paginas].map((ele) => {
+                const li = ele.querySelectorAll('li');
+                [...li].map((li, i) => {
+                    const aux = li.querySelector('a');
+                    dato.paginas.push({
+                        url_scraping: baseUrl + aux?.getAttribute('href')!,
+                        numero: i + 1,
+                        url_big: '',
+                        url_medio: '',
+                        url_small: '',
+                        data_scraping: '',
+                        url_original: ''
+                    })
+                })
+                dato.numero_pagina = ([...li].length + 1) //paginas
+                console.log('cantidad paginas', [...li].length)
+            })
+            console.log('paginas final')
+            return dato;
+        }, { dato, baseUrl });
+        await browser.close();
 
-    //await page.screenshot({ path: 'capturas/hitomi.png' })
-    await browser.close();
-    return obra;
+        return obra;
+    } catch (error) {
+        throw new Error("ERROR DE PAGINA SALTANDO A LA PROXIMA");
+        return dato;
+    }
 }
 
 export async function scrapingPaginaImage(resultados: Obra, pathOriginal: string, pathSmall: string, pathMedio: string, pathBig: string) {
@@ -271,7 +277,6 @@ export async function scrapingPaginaImage(resultados: Obra, pathOriginal: string
         await fs.promises.writeFile(`${pathOriginal}/${pagina.numero}.${formato}`, imageBuffer);
 
         try {
-
             const pathStorageBig = await OptimizarBig(`${pathOriginal}/${pagina.numero}.${formato}`, `${pagina.numero}`, pathBig)
             const pathStorageMedio = await OptimizarMedio(`${pathOriginal}/${pagina.numero}.${formato}`, `${pagina.numero}`, pathMedio)
             const pathStorageSmall = await OptimizarSmall(`${pathOriginal}/${pagina.numero}.${formato}`, `${pagina.numero}`, pathSmall)
@@ -402,7 +407,7 @@ export async function OptimizarSmall(pathImagen: string, nameFile: string, pathS
 }
 
 
-async function proceso_descarga(browserPagina: Browser, imgURL: string | null | undefined, pathOriginal: string, index: number, paginas: Pagina[], formato: string, url_pagina:string) {
+async function proceso_descarga(browserPagina: Browser, imgURL: string | null | undefined, pathOriginal: string, index: number, paginas: Pagina[], formato: string, url_pagina: string) {
 
     logger.info(`preparando descarga desde ${imgURL}`);
     const pageNew = await browserPagina.newPage()

@@ -89,6 +89,7 @@ export async function inizialize() {
 
         }
     }
+    logger.info(`script finalizado`)
 }
 
 export async function inizializeLibros() {
