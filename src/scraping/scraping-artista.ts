@@ -430,21 +430,23 @@ async function proceso_descarga(browserPagina: Browser, imgURL: string | null | 
         const response = await pageNew.goto(imgURL!, { timeout: 120000, waitUntil: 'networkidle0' })
         const imageBuffer = await response!.buffer();
         await fs.promises.writeFile(`${pathOriginal}/${num_pagina}.${formato}`, imageBuffer);
-        logger.info(`imagen descargada ${pathOriginal}/${num_pagina}.${formato}`);
+        logger.info(`imagen descargada ${pathOriginal}/${num_pagina}.${formato}`)
+        
+        paginas.push({
+            url_scraping: url_pagina,
+            numero: num_pagina,
+            url_big: '',
+            url_medio: '',
+            url_small: '',
+            url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${num_pagina}.${formato}`,
+            data_scraping: imgURL!
+        })
     }
     finally {
         pageNew.close();
     }
 
-    paginas.push({
-        url_scraping: url_pagina,
-        numero: num_pagina,
-        url_big: '',
-        url_medio: '',
-        url_small: '',
-        url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${num_pagina}.${formato}`,
-        data_scraping: imgURL!
-    })
+   
 
     return paginas;
 }
