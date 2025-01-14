@@ -1,6 +1,7 @@
 #custom
 comics/*
 build/
+backup/
 # Logs
 logs
 *.log

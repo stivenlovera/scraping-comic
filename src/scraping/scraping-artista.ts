@@ -2,15 +2,13 @@
 import { Obra } from '../entities/obra.entity';
 import 'dotenv/config';
 import { logger } from '..';
-import moment from 'moment';
 import { Pagina } from '../entities/pagina.entity';
 import * as fs from 'fs'
-import { convertJson, stringToFormat } from '../utils/conversiones';
+import { convertJson, headlessVerified, stringToFormat } from '../utils/conversiones';
 import sharp from 'sharp';
 import puppeteer from 'puppeteer-extra'
 import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker'
 import { Browser } from 'puppeteer';
-import player from 'play-sound'
 
 export async function scrapingArtista(url: string): Promise<Obra[]> {
     const baseUrl = process.env.URL_SCRAPING;
@@ -119,8 +117,10 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
 
     const baseUrl = process.env.URL_SCRAPING;
     // Launch the browser and open a new blank page
+
+    logger.info(`process.env ${process.env.HEADLESS}`);
     const browser = await puppeteer.launch({
-        headless: 'shell'
+        headless: headlessVerified(process.env.HEADLESS)
     });
 
     logger.info(`Scrapeando informacion de obra ${url}`);
@@ -311,10 +311,15 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
     let paginas: Pagina[] = [];
 
     const browserPagina = await puppeteer.launch({
-        headless: 'shell'
+        headless: headlessVerified(process.env.HEADLESS),
     });
 
     const page = await browserPagina.newPage();
+    await page.setViewport({
+        width: 1366,
+        height: 768,
+    });
+
     let index = 0
 
     const url = resultados.paginas[index].url_scraping
@@ -326,15 +331,24 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
             logger.info(`pagina ${index} de ${resultados.paginas.length}`);
             await page.waitForSelector('img[src][class="lillie"]')
             const imgURL = await page!.evaluate(() => {
-                const picture = document.querySelectorAll('#comicImages>picture')[0]
-                const srcset = picture.children.item(0)?.getAttribute('srcset')
-                const src = picture.children.item(0)?.getAttribute('src')
-                if (srcset == null) {
+                let picture = document.querySelectorAll('#comicImages>picture')[0]
+                console.log(`VALIDATE ONE ${picture}`)
+                if (picture !== undefined) {
+                    const srcset = picture.children.item(0)?.getAttribute('srcset')
+                    const src = picture.children.item(0)?.getAttribute('src')
+                    if (srcset == null) {
+                        return src
+                    } else {
+                        return srcset
+                    }
+                }
+                else {
+                    picture = document.querySelectorAll('#comicImages>img')[0]
+                    const src = picture.getAttribute('src')
                     return src
-                } else {
-                    return srcset
                 }
             })
+
             const url_pagina = page.url()
             logger.info(`url de descarga ${url_pagina}`);
             const formato = stringToFormat(imgURL!)
@@ -356,7 +370,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
                 break;
             }
         } catch (error) {
-            logger.error(`ERROR GENERADO EN PAGINA ${index} REINTENTANDO ....`);
+            logger.error(`ERROR GENERADO EN PAGINA ${index} REINTENTANDO .... ${error}`);
             index = index - 1
             await page.reload()
             logger.error(`Cerrando pestaña cerrada`);
