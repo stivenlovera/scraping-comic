@@ -8,7 +8,9 @@ import { convertJson, headlessVerified, stringToFormat } from '../utils/conversi
 import sharp from 'sharp';
 import puppeteer from 'puppeteer-extra'
 import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker'
-import { Browser } from 'puppeteer';
+import { Browser, DEFAULT_INTERCEPT_RESOLUTION_PRIORITY } from 'puppeteer';
+import { PuppeteerBlocker } from '@ghostery/adblocker-puppeteer';
+import {fetch as crossFetch} from 'cross-fetch'; 
 
 export async function scrapingArtista(url: string): Promise<Obra[]> {
     const baseUrl = process.env.URL_SCRAPING;
@@ -189,8 +191,16 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
                 const li = ele.querySelectorAll('li');
                 [...li].map((li) => {
                     if ((li.querySelector('a')?.innerText) != null || (li.querySelector('a')?.innerText) != undefined) {
+                        let sexo = ''
+                        if ((li.querySelector('a')!.innerText).search('♂') != -1) {
+                            sexo = 'masculino'
+                        }
+                        if ((li.querySelector('a')!.innerText).search('♀') != -1) {
+                            sexo = 'femenino'
+                        }
                         dato.etiquetas.push({
-                            nombre: (li.querySelector('a')!.innerText).replace(/[^a-zA-Z0-9 ]/g, '').trim()
+                            nombre: (li.querySelector('a')!.innerText).replace(/[^a-zA-Z0-9 ]/g, '').trim(),
+                            sexo: sexo
                         });
                     }
                 })
@@ -237,7 +247,7 @@ export async function scrapingObra(url: string, dato: Obra): Promise<Obra> {
         return obra;
     } catch (error) {
         throw new Error("ERROR DE PAGINA SALTANDO A LA PROXIMA");
-        return dato;
+
     }
 }
 
@@ -307,7 +317,8 @@ export async function scrapingPaginaImage(resultados: Obra, pathOriginal: string
 }
 
 export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: string) {
-    puppeteer.use(AdblockerPlugin({ blockTrackers: true }))
+
+    puppeteer.use(AdblockerPlugin({ blockTrackers: true, blockTrackersAndAnnoyances: true, interceptResolutionPriority: DEFAULT_INTERCEPT_RESOLUTION_PRIORITY, }))
     let paginas: Pagina[] = [];
 
     const browserPagina = await puppeteer.launch({
@@ -315,6 +326,30 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
     });
 
     const page = await browserPagina.newPage();
+
+    PuppeteerBlocker.fromPrebuiltAdsAndTracking(crossFetch).then((blocker) => {
+        blocker.enableBlockingInPage(page);
+    });
+
+    await page.setRequestInterception(true);
+
+    const rejectRequestPattern = [
+        "googlesyndication.com",
+        "/*.doubleclick.net",
+        "/*.amazon-adsystem.com",
+        "/*.adnxs.com",
+        "/*.adnxs.com",
+        "/*.cholridasbkt.fly.storage.tigris.dev"
+    ];
+    const blockList = [];
+
+    page.on("request", (request) => {
+        if (rejectRequestPattern.find((pattern) => request.url().match(pattern))) {
+            blockList.push(request.url());
+            request.abort();
+        } else request.continue();
+    });
+
     await page.setViewport({
         width: 1366,
         height: 768,
@@ -324,7 +359,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
 
     const url = resultados.paginas[index].url_scraping
 
-    await page.goto(url, { timeout: 60000, waitUntil: 'networkidle0' });
+    await page.goto(url, { timeout: 60000, waitUntil: 'domcontentloaded' });
 
     for (index; index < 10000; index++) {
         try {
@@ -349,10 +384,44 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
                 }
             })
 
+            const fileUrl = imgURL!;
+            logger.info(`pagina init por extracion a ${fileUrl}`);
+            //await page.exposeFunction('urlExists', promisify);
+            const base64 = await page.evaluate(async (fileUrl) => {
+
+                /* console.log(fileUrl)
+                const response = await fetch(fileUrl);
+                const arrayBuffer = await response.arrayBuffer();
+                return arrayBuffer */
+
+                const response = await fetch(fileUrl);
+                const blob = await response.blob();
+                const data = new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(((reader.result) as string).split(',')[1]);
+                    reader.readAsDataURL(blob);
+                });
+                return data
+            }, fileUrl);
+
+            //logger.info(`data buffer => ${base64}`);
+
             const url_pagina = page.url()
             logger.info(`url de descarga ${url_pagina}`);
             const formato = stringToFormat(imgURL!)
-            await proceso_descarga(browserPagina, imgURL, pathOriginal, index, paginas, formato, url_pagina);
+
+            await fs.promises.writeFile(`${pathOriginal}/${index + 1}.${formato}`, Buffer.from(base64 as string, 'base64'));
+            paginas.push({
+                url_scraping: url_pagina,
+                numero: index + 1,
+                url_big: '',
+                url_medio: '',
+                url_small: '',
+                url_original: `${pathOriginal.replace(process.env.PATH_COMIC!, '')}/${index + 1}.${formato}`,
+                data_scraping: imgURL!
+            })
+            await sleep(1000);
+            //await proceso_descarga(browserPagina, imgURL, pathOriginal, index, paginas, formato, url_pagina);
             const validate = await page!.evaluate(() => {
                 if (document.querySelector('#nextPanel>i.icon-chevron-left.icon-white')?.isConnected) {
                     return true;
@@ -369,6 +438,7 @@ export async function scrapingPerPaginaImage(resultados: Obra, pathOriginal: str
                 resultados.numero_pagina = index + 1;
                 break;
             }
+
         } catch (error) {
             logger.error(`ERROR GENERADO EN PAGINA ${index} REINTENTANDO .... ${error}`);
             index = index - 1
@@ -431,7 +501,7 @@ async function proceso_descarga(browserPagina: Browser, imgURL: string | null | 
         const imageBuffer = await response!.buffer();
         await fs.promises.writeFile(`${pathOriginal}/${num_pagina}.${formato}`, imageBuffer);
         logger.info(`imagen descargada ${pathOriginal}/${num_pagina}.${formato}`)
-        
+
         paginas.push({
             url_scraping: url_pagina,
             numero: num_pagina,
@@ -446,7 +516,14 @@ async function proceso_descarga(browserPagina: Browser, imgURL: string | null | 
         pageNew.close();
     }
 
-   
+
 
     return paginas;
+}
+
+
+function sleep(ms: number) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
 }

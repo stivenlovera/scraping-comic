@@ -63,7 +63,7 @@ export async function inizialize() {
             const completadoPaginas = await scrapingPerPaginaImage(dato, pathOriginal);
 
             //data base
-            logger.info(`insertando obra mongo`)
+            logger.info(`insertando obra mongo ${convertJson(completadoPaginas)}`)
             const insertObra = await mongoDB.getRepository(Obra).insert(completadoPaginas);
             logger.info(`resultado de insercion correcto mongo: ${convertJson(insertObra.identifiers)}`)
 
@@ -75,9 +75,12 @@ export async function inizialize() {
             });
             logger.info(`actualizacion de mysql: ${convertJson(ids)}`)
         } catch (error) {
+            const resultError = (error as Error).message;
+            logger.error(resultError)
+
             logger.error(`ERROR EN =>  abecedario:${obra.pagina_nombre} autor:${obra.nombre} libro_id:${obra.libro_id} url:${obra.href}` + error)
-            if (error == 'Error: ERROR DE PAGINA SALTANDO A LA PROXIMA') {
-                logger.error(error)
+            if (resultError == 'ERROR DE PAGINA SALTANDO A LA PROXIMA') {
+                logger.error(resultError)
             }
             else {
                 logger.error(`REINTENTANDO...`)

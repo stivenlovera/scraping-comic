@@ -7,4 +7,7 @@ export class Etiqueta {
 
     @Column()
     nombre: string;
+
+    @Column()
+    sexo?: string;
 }
